@@ -1,0 +1,15 @@
+{
+  "globals": {
+    "describe": true,
+    "context": true,
+    "it": true,
+    "expect": true,
+    "before": true,
+    "after": true,
+    "beforeEach": true,
+    "afterEach": true,
+    "sinon": true
+  },
+  "es3": false,
+  "extends": "../.jshintrc"
+}
