@@ -14,6 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "@qubit/attr": "^1.0.0",
-    "@qubit/jquery": "^1.8.2"
+    "@qubit/jquery": "^1.8.2",
+    "@qubit/underscore": "^1.5.2"
   }
 }

@@ -7,7 +7,7 @@ define(function (require) {
 
     describe("the first argument", function() {
 
-      it("should be a string, function or array", function() {
+      it("should not be a number or boolean", function() {
 
         try {
           poller(12345, function() {});
@@ -18,6 +18,10 @@ define(function (require) {
             "or array containing selectors, window variables or functions."
           ].join(""));
         }
+      });
+
+      it("should execute a function", function(done) {
+        poller(function() { return true; }, done);
       });
 
     });

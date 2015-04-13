@@ -15,6 +15,7 @@
   */
 
 var $ = require("@qubit/jquery");
+var _ = require("@qubit/underscore");
 var attr = require("@qubit/attr");
 
 // These are currently not configurable to
@@ -32,78 +33,66 @@ module.exports = function(targets, callback) {
 
   var timeElapsed = 0;
 
-  if (!targets || typeof targets === "number" || typeof targets === "boolean") {
+  if (typeof targets === "number" || typeof targets === "boolean") {
     throw new Error([
       "Expected first argument to be selector string",
       "or array containing selectors, window variables or functions."
     ].join(""));
-  }
-  if (typeof callback !== "function") {
+  } else if (typeof callback !== "function") {
     throw new Error("Expected second argument to be a callback function.");
   } else {
+
+    if (!_.isArray(targets)) {
+      targets = new Array(targets);
+    }
     callbacks.push({
       targets: targets,
-      callback: callback
+      callback: callback,
+      remove: false
     });
   }
 
+  active = true;
   tick(INTERVAL);
 
   /**
-   * Loop through all registered callbacks and execute their filter functions,
-   *    resolving or rejecting them where necessary
+   * Loop through all registered callbacks, polling for selectors or executing filter functions
    * @return {}
    */
   function tick (time) {
-    for (var i = 0, len = callbacks.length; i < len; i++) {
+    try {
+      callbacks = _.filter(_.map(callbacks, function (item) {
 
-      if (callbacks[i] !== null && callbacks[i] !== undefined) {
+        var targets = item.targets,
+          cb = item.callback;
 
-        var targets = callbacks[i].targets,
-          callback = callbacks[i].callback;
-
-        try {
-
-          var targetsPass = false;
-
-          if (typeof targets === "string") {
-            if (targets === "" || $(targets).length) {
-              targetsPass = true;
+        var targetsPass = true;
+        _.each(targets, function (target) {
+          if (typeof target === "function") {
+            if (!target()) {
+              targetsPass = false;
             }
-          } else if (typeof targets === "function") {
-            if (targets()) {
-              targetsPass = true;
+          } else if (target.indexOf("window.") === 0) {
+            if (typeof attr(window, target) === "undefined") {
+              targetsPass = false;
             }
-          } else if ($.isArray(targets)) {
-            targetsPass = true;
-            for (i = 0, len = targets.length; i < len; i++) {
-              if (typeof targets[i] === "function") {
-                if (!targets[i]()) {
-                  targetsPass = false; break;
-                }
-              } else if (targets[i].indexOf("window") > -1) {
-                if (typeof attr(window, targets[i]) === "undefined") {
-                  targetsPass = false; break;
-                }
-              } else if ($(targets[i]).length === 0) {
-                targetsPass = false; break;
-              }
-            }
-          } else {
-            spliceOne(callbacks, i);
-            callback("Error: Selectors parameter must be a string or array of selectors");
+          } else if (target === "" || $(target).length === 0) {
+            targetsPass = false;
           }
+        });
 
-          if (targetsPass) {
-            spliceOne(callbacks, i);
-            callback(null);
-          }
+        if (targetsPass) {
+          item.remove = true;
+          cb(null);
+        }
 
-        }
-        catch (e) {
-          console.error(e);
-        }
-      }
+        return item;
+      }), function (item) {
+        return !item.remove;
+      });
+    }
+    catch (e) {
+      console.error(e);
     }
 
     if (callbacks.length !== 0) {
@@ -117,15 +106,6 @@ module.exports = function(targets, callback) {
         }
       }, time);
     }
-  }
-
-  function spliceOne(array, index) {
-    var len = array.length;
-    if (!len) { return; }
-    while (index < len) {
-      array[index] = array[index + 1]; index++;
-    }
-    array.length--;
   }
 };
 
