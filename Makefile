@@ -1,5 +1,5 @@
 ifndef ROOT
-  ROOT = ../..
+	ROOT = ../..
 endif
 
 BIN = $(ROOT)/node_modules/.bin
@@ -10,9 +10,9 @@ TESTS = test
 .PHONY: test watch
 
 test:
-  $(BIN)/jsxhint --reporter $(ROOT)/node_modules/jshint-stylish --exclude node_modules .
-  $(BIN)/jscs .
-  $(BIN)/karma start --single-run
+	$(BIN)/jsxhint --reporter $(ROOT)/node_modules/jshint-stylish --exclude node_modules .
+	$(BIN)/jscs .
+	$(BIN)/karma start --single-run
 
 watch:
-  $(BIN)/karma start
+	$(BIN)/karma start

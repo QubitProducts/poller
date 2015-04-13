@@ -22,8 +22,6 @@ var attr = require("@qubit/attr");
 // make polling more efficient by reusing the
 // same global timeout.
 var INTERVAL = 50;
-// var BACKOFF_THRESHOLD = 100;
-// var BACKOFF_RATE = 1;
 var MAX_DURATION = 20000;
 
 var callbacks = [];
@@ -43,12 +41,11 @@ module.exports = function(targets, callback) {
   } else {
 
     if (!_.isArray(targets)) {
-      targets = new Array(targets);
+      targets = [targets];
     }
     callbacks.push({
       targets: targets,
-      callback: callback,
-      remove: false
+      callback: callback
     });
   }
 
@@ -60,40 +57,38 @@ module.exports = function(targets, callback) {
    * @return {}
    */
   function tick (time) {
-    try {
-      callbacks = _.filter(_.map(callbacks, function (item) {
+    callbacks = _.reduce(callbacks, function (memo, item) {
 
-        var targets = item.targets,
-          cb = item.callback;
+      var targets = item.targets,
+        cb = item.callback;
 
-        var targetsPass = true;
-        _.each(targets, function (target) {
-          if (typeof target === "function") {
+      var targetsPass = true;
+      _.each(targets, function (target) {
+        if (typeof target === "function") {
+          try {
             if (!target()) {
               targetsPass = false;
             }
-          } else if (target.indexOf("window.") === 0) {
-            if (typeof attr(window, target) === "undefined") {
-              targetsPass = false;
-            }
-          } else if (target === "" || $(target).length === 0) {
+          } catch (err) {
+            console && console.error && console.error(err.stack);
             targetsPass = false;
           }
-        });
-
-        if (targetsPass) {
-          item.remove = true;
-          cb(null);
+        } else if (target.indexOf("window.") === 0) {
+          if (typeof attr(window, target) === "undefined") {
+            targetsPass = false;
+          }
+        } else if (target === "" || $(target).length === 0) {
+          targetsPass = false;
         }
-
-        return item;
-      }), function (item) {
-        return !item.remove;
       });
-    }
-    catch (e) {
-      console.error(e);
-    }
+
+      if (targetsPass) {
+        cb(null);
+        return memo;
+      } else {
+        return memo.concat([item]);
+      }
+    }, []);
 
     if (callbacks.length !== 0) {
       setTimeout(function() {
