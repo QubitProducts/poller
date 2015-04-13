@@ -46,5 +46,7 @@
   "validateJSDoc": {
     "checkParamNames": true,
     "requireParamTypes": true
-  }
+  },
+
+  "excludeFiles": ["node_modules/**"]
 }
