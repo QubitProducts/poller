@@ -94,6 +94,20 @@ define(function (require) {
       }, 10);
     });
 
+    it("should be able to handle callback functions that call poller", function(done) {
+      var secondFunc = function() {
+        console.log("second func");
+        done();
+      };
+
+      var firstFunc = function() {
+        console.log("first func");
+        poller([function() { return true; }], secondFunc);
+      };
+
+      poller([function() { return true; }], firstFunc);
+    });
+
     describe("pausing", function () {
       var clock;
       beforeEach(function () {

@@ -83,7 +83,7 @@ module.exports = function(targets, callback) {
       });
 
       if (targetsPass) {
-        cb();
+        setTimeout(cb, 0);
         return memo;
       } else {
         return memo.concat([item]);
