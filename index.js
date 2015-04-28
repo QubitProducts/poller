@@ -57,20 +57,21 @@ module.exports = function(targets, callback) {
    * @return {}
    */
   function tick (time) {
+    var errors = {};
     callbacks = _.reduce(callbacks, function (memo, item) {
 
-      var targets = item.targets,
-        cb = item.callback;
+      var targets = item.targets;
+      var cb = item.callback;
 
       var targetsPass = true;
-      _.each(targets, function (target) {
+      _.each(targets, function (target, index) {
         if (typeof target === "function") {
           try {
             if (!target()) {
               targetsPass = false;
             }
           } catch (err) {
-            console && console.error && console.error(err.stack);
+            errors[index] = err.stack;
             targetsPass = false;
           }
         } else if (target.indexOf("window.") === 0) {
@@ -98,6 +99,9 @@ module.exports = function(targets, callback) {
           active = true;
         } else {
           active = false;
+          _.each(errors, function(error, index) {
+            console && console.error && console.error("Poller function errored at index " + index + ": " + error);
+          });
         }
       }, time);
     }
