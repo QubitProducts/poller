@@ -10,7 +10,7 @@ TESTS = test
 .PHONY: test watch
 
 test:
-	$(BIN)/jsxhint --reporter $(ROOT)/node_modules/jshint-stylish --exclude node_modules .
+	$(BIN)/jshint --reporter $(ROOT)/node_modules/jshint-stylish --exclude node_modules .
 	$(BIN)/jscs .
 	$(BIN)/karma start --single-run
 
