@@ -21,15 +21,16 @@ var attr = require("@qubit/attr");
 // These are currently not configurable to
 // make polling more efficient by reusing the
 // same global timeout.
-var INTERVAL = 50;
-var MAX_DURATION = 20000;
+var INCREASE_RATE = 1.5;
+var MAX_DURATION = 15000;
 
 var callbacks = [];
 var active = false;
 
 module.exports = function(targets, callback) {
 
-  var timeElapsed = 0;
+  var startInterval = 50;
+  var startTime = (+new Date());
 
   if (typeof targets === "number" || typeof targets === "boolean") {
     throw new Error([
@@ -50,7 +51,7 @@ module.exports = function(targets, callback) {
   }
 
   active = true;
-  tick(INTERVAL);
+  tick(startInterval);
 
   /**
    * Loop through all registered callbacks, polling for selectors or executing filter functions
@@ -64,24 +65,25 @@ module.exports = function(targets, callback) {
       var cb = item.callback;
 
       var targetsPass = true;
-      _.each(targets, function (target, index) {
+      for (var index = 0; index < targets.length; index++) {
+        var target = targets[index];
         if (typeof target === "function") {
           try {
             if (!target()) {
-              targetsPass = false;
+              targetsPass = false; break;
             }
           } catch (err) {
             errors[index] = err.stack;
-            targetsPass = false;
+            targetsPass = false; break;
           }
         } else if (target.indexOf("window.") === 0) {
           if (typeof attr(window, target) === "undefined") {
-            targetsPass = false;
+            targetsPass = false; break;
           }
         } else if (target === "" || $(target).length === 0) {
-          targetsPass = false;
+          targetsPass = false; break;
         }
-      });
+      }
 
       if (targetsPass) {
         setTimeout(cb, 0);
@@ -93,9 +95,8 @@ module.exports = function(targets, callback) {
 
     if (callbacks.length !== 0) {
       setTimeout(function() {
-        timeElapsed += time;
-        if (timeElapsed < MAX_DURATION) {
-          tick(time);
+        if ((+new Date() - startTime) < MAX_DURATION) {
+          tick(time * INCREASE_RATE);
           active = true;
         } else {
           active = false;
