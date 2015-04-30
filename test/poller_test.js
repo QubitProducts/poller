@@ -96,12 +96,10 @@ define(function (require) {
 
     it("should be able to handle callback functions that call poller", function(done) {
       var secondFunc = function() {
-        console.log("second func");
         done();
       };
 
       var firstFunc = function() {
-        console.log("first func");
         poller([function() { return true; }], secondFunc);
       };
 
@@ -118,6 +116,7 @@ define(function (require) {
       });
       it("should poll after having been paused", function() {
         var cb = sinon.stub();
+
         poller(".foo", cb);
         clock.tick(50);
         expect(poller.isActive()).to.be.eql(true);
@@ -126,6 +125,15 @@ define(function (require) {
         clock.tick(10000);
         expect(cb.called).to.be.eql(false);
         expect(poller.isActive()).to.be.eql(false);
+
+        // restart polling
+        poller(".bar", cb);
+        expect(poller.isActive()).to.be.eql(true);
+        clock.tick(10000);
+        expect(poller.isActive()).to.be.eql(true);
+        clock.tick(10000);
+        expect(cb.called).to.be.eql(false);
+        expect(cb.called).to.be.eql(false);
       });
 
     });
