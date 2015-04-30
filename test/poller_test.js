@@ -16,7 +16,7 @@ define(function (require) {
           expect(err.message).to.eql([
             "Expected first argument to be selector string",
             "or array containing selectors, window variables or functions."
-          ].join(""));
+          ].join(" "));
         }
       });
 
