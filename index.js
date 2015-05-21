@@ -11,7 +11,7 @@
   * TODO
 
   * Test multiple intervals (from 10-200ms, linearly increasing on each poll)
-  * Test difference methods of polling (setTimeout/setInterval, requestAnimationFrame, mutationObservers)
+  * Test difference methods of polling (setTimeout / setInterval, requestAnimationFrame, mutationObservers)
   */
 
 var $ = require("@qubit/jquery");
