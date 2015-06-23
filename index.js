@@ -77,7 +77,7 @@ function tick() {
   tickCount += 1;
 
   var errors = {};
-  callbacks = _.reduce(callbacks, function (memo, item) {
+  callbacks = _.filter(callbacks, function (item) {
     var targets = item.targets;
     var cb = item.callback;
 
@@ -104,11 +104,11 @@ function tick() {
 
     if (targetsPass) {
       setTimeout(cb, 0);
-      return memo;
+      return false;
     } else {
-      return memo.concat([item]);
+      return true;
     }
-  }, []);
+  });
 
   // all poller callbacks have been satisfied
   if (callbacks.length === 0) {
