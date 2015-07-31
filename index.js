@@ -1,45 +1,115 @@
-/**
-  * EXAMPLE USAGE
-  *
-  * var poller = require("@qubit/poller");
-  * poller(".nav", cb);
-  * poller(function() { return true; }, cb);
-  * poller([".nav", ".header"], cb);
-  * poller([".nav", "window.universal_variable"], cb);
-  * poller([".nav", "window.universal_variable", function () { return true; }], cb);
-
-  * TODO
-
-  * Test multiple intervals (from 10-200ms, linearly increasing on each poll)
-  * Test difference methods of polling (setTimeout / setInterval, requestAnimationFrame, mutationObservers)
-  */
-
 var $ = require("@qubit/jquery");
 var _ = require("@qubit/underscore");
 var attr = require("@qubit/attr");
 
-// These are not configurable to
-// make polling more efficient by reusing the
-// same global timeout.
+/**
+ * Constants - these are not configurable to
+ * make polling more efficient by reusing the
+ * same global timeout.
+ */
 
-// The duration of the initial ticks before
-// we start backing off
-var INITIAL_TICK = 50;
-// The backoff multiplier
-var INCREASE_RATE = 1.5;
-// How many ticks before we start backing off
-var BACKOFF_THRESHOLD = 5;
-// How much time before we stop polling completely
-var MAX_DURATION = 15000;
+var INITIAL_TICK = 50; // The duration of the initial ticks before we start backing off
+var INCREASE_RATE = 1.5; // The backoff multiplier
+var BACKOFF_THRESHOLD = 5; // How many ticks before we start backing off
+var MAX_DURATION = 15000; // How much time before we stop polling completely
 
+/**
+ * Globals
+ */
+var startTime, tickCount, currentTickDelay;
 var callbacks = [];
 var active = false;
 
-var startTime;
-var tickCount;
-var currentTickDelay;
+/**
+ * Main poller method to register 'targets' to poll for
+ * and a callback when all targets validated and complete
+ * 'targets' can be one of the following formats:
+ *   - a selector string e.g. 'body > span.grid15'
+ *   - a window variable formatted as a string e.g. 'window.universal_variable'
+ *   - a function which returns a condition for which to stop the polling e.g.
+ *     function () {
+ *       return $(".some-class").length === 2;
+ *     }
+ *   - an array of any of the above formats
+ */
+module.exports = function poller(targets, callback) {
+  registerCallbackItem(targets, callback);
+  initGlobals();
 
-module.exports = function poll(targets, callback) {
+  // don't start ticking unless current ticking is inactive
+  if (!active) {
+    active = true;
+    tick();
+  }
+};
+
+/**
+ * A boolean check to see if the poller is currently active
+ */
+module.exports.isActive = function isActive() {
+  return active;
+};
+
+/**
+ * Initialize the global variables
+ */
+function initGlobals() {
+  currentTickDelay = INITIAL_TICK;
+  startTime = (+new Date());
+  tickCount = 0;
+}
+
+/**
+ * Loop through all registered callbacks, polling for selectors or executing filter functions
+ */
+function tick() {
+  tickCount += 1;
+
+  var errors = {};
+  callbacks = _.filter(callbacks, _.bind(filterCallbackItem, null, errors));
+
+  // all poller callbacks have been satisfied
+  if (callbacks.length === 0) {
+    active = false;
+    return;
+  }
+
+  // we've reached the max threshold
+  if ((+new Date() - startTime) > MAX_DURATION) {
+    active = false;
+    _.each(errors, function(error, index) {
+      console && console.error && console.error("Poller function errored at index " + index + ": " + error);
+    });
+    return;
+  }
+
+  // start increasing tick rate
+  if (tickCount > BACKOFF_THRESHOLD) {
+    currentTickDelay = currentTickDelay * INCREASE_RATE;
+  }
+
+  setTimeout(tick, currentTickDelay);
+}
+
+/**
+ * Adds callback item to the global array of callbacks
+ */
+function registerCallbackItem(targets, callback) {
+  validateInputs(targets, callback);
+  if (!_.isArray(targets)) {
+    targets = [targets];
+  }
+  targets = _.compact(targets);
+  callbacks.push({
+    targets: targets,
+    callback: callback
+  });
+}
+
+/**
+ * Validate the input parameters passed to poller
+ */
+function validateInputs(targets, callback) {
   if (typeof targets === "number" || typeof targets === "boolean") {
     throw new Error([
       "Expected first argument to be selector string",
@@ -50,88 +120,37 @@ module.exports = function poll(targets, callback) {
   if (typeof callback !== "function") {
     throw new Error("Expected second argument to be a callback function.");
   }
-
-  currentTickDelay = INITIAL_TICK;
-  startTime = (+new Date());
-  tickCount = 0;
-
-  if (!_.isArray(targets)) targets = [targets];
-  targets = _.compact(targets);
-
-  callbacks.push({
-    targets: targets,
-    callback: callback
-  });
-
-  if (!active) {
-    active = true;
-    tick();
-  }
-};
-
-/**
- * Loop through all registered callbacks, polling for selectors or executing filter functions
- * @return {}
- */
-function tick() {
-  tickCount += 1;
-
-  var errors = {};
-  callbacks = _.filter(callbacks, function (item) {
-    var targets = item.targets;
-    var cb = item.callback;
-
-    var targetsPass = true;
-    for (var index = 0; index < targets.length; index++) {
-      var target = targets[index];
-      if (typeof target === "function") {
-        try {
-          if (!target()) {
-            targetsPass = false; break;
-          }
-        } catch (err) {
-          errors[index] = err.stack;
-          targetsPass = false; break;
-        }
-      } else if (target.indexOf("window.") === 0) {
-        if (typeof attr(window, target) === "undefined") {
-          targetsPass = false; break;
-        }
-      } else if ($(target).length === 0) {
-        targetsPass = false; break;
-      }
-    }
-
-    if (targetsPass) {
-      setTimeout(cb, 0);
-      return false;
-    } else {
-      return true;
-    }
-  });
-
-  // all poller callbacks have been satisfied
-  if (callbacks.length === 0) {
-    active = false;
-    return;
-  }
-
-  // we've reached the max treshold
-  if ((+new Date() - startTime) > MAX_DURATION) {
-    active = false;
-    _.each(errors, function(error, index) {
-      console && console.error && console.error("Poller function errored at index " + index + ": " + error);
-    });
-    return;
-  }
-
-  if (tickCount > BACKOFF_THRESHOLD) {
-    currentTickDelay = currentTickDelay * INCREASE_RATE;
-  }
-
-  setTimeout(tick, currentTickDelay);
 }
 
-module.exports.isActive = function () {
-  return active;
-};
+/**
+ * Filter callback item based on the polling validation each of the specified polling
+ * targets (selectors, window vars or functions). If the callback item passes the
+ * validation then it's success callback is fired.
+ */
+function filterCallbackItem(errors, item) {
+  var targets = item.targets;
+  var cb = item.callback;
+
+  for (var index = 0; index < targets.length; index++) {
+    var target = targets[index];
+    if (typeof target === "function") {
+      try {
+        if (!target()) {
+          return true;
+        }
+      } catch (err) {
+        errors[index] = err.stack;
+        return true;
+      }
+    } else if (target.indexOf("window.") === 0) {
+      if (typeof attr(window, target) === "undefined") {
+        return true;
+      }
+    } else if ($(target).length === 0) {
+      return true;
+    }
+  }
+
+  setTimeout(cb, 0);
+  return false;
+}

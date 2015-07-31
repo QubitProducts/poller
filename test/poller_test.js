@@ -1,18 +1,13 @@
 define(function (require) {
-
   var $ = require("@qubit/jquery");
   var poller = require("../index");
 
   describe("poller", function () {
-
     describe("the first argument", function() {
-
       it("should not be a number or boolean", function() {
-
         try {
           poller(12345, function() {});
-        }
-        catch (err) {
+        } catch (err) {
           expect(err.message).to.eql([
             "Expected first argument to be selector string",
             "or array containing selectors, window variables or functions."
@@ -23,11 +18,9 @@ define(function (require) {
       it("should execute a function", function(done) {
         poller(function() { return true; }, done);
       });
-
     });
 
     describe("the second argument", function() {
-
       it("should be a callback function", function() {
         try {
           poller("noop");
@@ -36,7 +29,6 @@ define(function (require) {
           expect(err.message).to.eql("Expected second argument to be a callback function.");
         }
       });
-
     });
 
     it("should poll for window variables", function(done) {
@@ -95,25 +87,28 @@ define(function (require) {
     });
 
     it("should be able to handle callback functions that call poller", function(done) {
-      var secondFunc = function() {
+      function secondFunc() {
         done();
-      };
+      }
 
-      var firstFunc = function() {
+      function firstFunc() {
         poller([function() { return true; }], secondFunc);
-      };
+      }
 
       poller([function() { return true; }], firstFunc);
     });
 
     describe("pausing", function () {
       var clock;
+
       beforeEach(function () {
         clock = sinon.useFakeTimers();
       });
+
       afterEach(function () {
         clock.restore();
       });
+
       it("should poll after having been paused", function() {
         var cb = sinon.stub();
 
@@ -135,9 +130,6 @@ define(function (require) {
         expect(cb.called).to.be.eql(false);
         expect(cb.called).to.be.eql(false);
       });
-
     });
-
   });
-
 });
