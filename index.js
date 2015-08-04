@@ -34,7 +34,11 @@ var active = false;
  */
 module.exports = function poller(targets, callback) {
   registerCallbackItem(targets, callback);
-  initGlobals();
+
+  // initialize globals
+  startTime = (+new Date());
+  tickCount = 0;
+  currentTickDelay = INITIAL_TICK;
 
   // don't start ticking unless current ticking is inactive
   if (!active) {
@@ -49,15 +53,6 @@ module.exports = function poller(targets, callback) {
 module.exports.isActive = function isActive() {
   return active;
 };
-
-/**
- * Initialize the global variables
- */
-function initGlobals() {
-  currentTickDelay = INITIAL_TICK;
-  startTime = (+new Date());
-  tickCount = 0;
-}
 
 /**
  * Loop through all registered callbacks, polling for selectors or executing filter functions
