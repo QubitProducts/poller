@@ -35,7 +35,7 @@ var active = false;
 module.exports = function poller(targets, callback) {
   registerCallbackItem(targets, callback);
 
-  // initialize globals
+  //  reset state
   startTime = (+new Date());
   tickCount = 0;
   currentTickDelay = INITIAL_TICK;
