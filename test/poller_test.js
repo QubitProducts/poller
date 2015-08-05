@@ -1,6 +1,6 @@
 define(function (require) {
   var $ = require("@qubit/jquery");
-  var poller = require("../index");
+  var poller = require("../poller");
 
   describe("poller", function () {
     var $container;
