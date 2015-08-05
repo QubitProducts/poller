@@ -72,6 +72,7 @@ function tick() {
   // we've reached the max threshold
   if ((+new Date() - startTime) > MAX_DURATION) {
     active = false;
+    callbacks = [];
     _.each(errors, function(error, index) {
       console && console.error && console.error("Poller function errored at index " + index + ": " + error);
     });
