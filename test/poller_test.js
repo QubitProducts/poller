@@ -3,6 +3,16 @@ define(function (require) {
   var poller = require("../index");
 
   describe("poller", function () {
+    var $container;
+
+    beforeEach(function () {
+      $container = $("<div class='container'/>").appendTo("body");
+    });
+
+    afterEach(function () {
+      $container.remove();
+    });
+
     describe("the first argument", function() {
       it("should not be a number or boolean", function() {
         try {
@@ -46,27 +56,23 @@ define(function (require) {
     });
 
     it("should poll for a single selector as a string", function(done) {
-      $(".some-el").remove();
       poller(".some-el", done);
       setTimeout(function () {
-        $("<div>").addClass("some-el").appendTo("body");
+        $("<div>").addClass("some-el").appendTo($container);
       }, 100);
     });
 
     it("should poll for a single selector in an array", function(done) {
-      $(".some-el").remove();
       poller([".some-el"], done);
       setTimeout(function () {
-        $("<div>").addClass("some-el").appendTo("body");
+        $("<div>").addClass("some-el").appendTo($container);
       }, 10);
     });
 
     it("should poll for multiple selectors in an array", function(done) {
-      $(".some-el, .other-el").remove();
       poller([".some-el", ".other-el"], done);
       setTimeout(function () {
-        $("<div>").addClass("some-el").appendTo("body");
-        $("<div>").addClass("other-el").appendTo("body");
+        $container.append("<div class='some-el'></div><div class='other-el'></div>");
       }, 10);
     });
 
@@ -77,7 +83,7 @@ define(function (require) {
         done();
       });
       setTimeout(function () {
-        $("<div>").addClass("some-el").appendTo("body");
+        $("<div>").addClass("some-el").appendTo($container);
         window.universal_variable = {
           page: {
             type: "foo"
@@ -128,7 +134,58 @@ define(function (require) {
         expect(poller.isActive()).to.be.eql(true);
         clock.tick(10000);
         expect(cb.called).to.be.eql(false);
-        expect(cb.called).to.be.eql(false);
+        expect(poller.isActive()).to.be.eql(false);
+      });
+    });
+
+    describe("cancel", function () {
+      var clock, $foo, $bar;
+
+      beforeEach(function () {
+        $foo = $("<div class='foo'/>");
+        $bar = $("<div class='bar'/>");
+        clock = sinon.useFakeTimers();
+      });
+
+      afterEach(function () {
+        clock.restore();
+      });
+
+      it("should remove the corresponding callback from the polling chain", function () {
+        var fooCb = sinon.stub();
+        var cancelFoo = poller(".foo", fooCb);
+        expect(poller.isActive()).to.be.eql(true);
+
+        cancelFoo();
+
+        // make it exist
+        $container.append($foo);
+
+        clock.tick(50);
+        expect(poller.isActive()).to.be.eql(false);
+        expect(fooCb.called).to.be.eql(false);
+      });
+
+      it("should continue polling for other callback items after cancelling another", function () {
+        var fooCb = sinon.stub();
+        var barCb = sinon.stub();
+        var cancelFoo = poller(".foo", fooCb);
+        poller(".bar", barCb);
+
+        cancelFoo();
+
+        clock.tick(100);
+        expect(poller.isActive()).to.be.eql(true);
+        expect(fooCb.called).to.be.eql(false);
+        expect(barCb.called).to.be.eql(false);
+
+        // make foo and bar elements exist
+        $container.append($bar, $foo);
+
+        clock.tick(100);
+        expect(poller.isActive()).to.be.eql(false);
+        expect(fooCb.called).to.be.eql(false);
+        expect(barCb.called).to.be.eql(true);
       });
     });
   });

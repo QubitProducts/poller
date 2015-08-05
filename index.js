@@ -33,9 +33,10 @@ var active = false;
  *   - an array of any of the above formats
  */
 module.exports = function poller(targets, callback) {
-  registerCallbackItem(targets, callback);
+  var callbackItem = createCallbackItem(targets, callback);
+  registerCallbackItem(callbackItem);
 
-  //  reset state
+  // reset state
   startTime = (+new Date());
   tickCount = 0;
   currentTickDelay = INITIAL_TICK;
@@ -45,6 +46,8 @@ module.exports = function poller(targets, callback) {
     active = true;
     tick();
   }
+
+  return callbackItem.cancel;
 };
 
 /**
@@ -90,16 +93,27 @@ function tick() {
 /**
  * Adds callback item to the global array of callbacks
  */
-function registerCallbackItem(targets, callback) {
+function createCallbackItem(targets, callback) {
   validateInputs(targets, callback);
   if (!_.isArray(targets)) {
     targets = [targets];
   }
   targets = _.compact(targets);
-  callbacks.push({
+  var callbackItem = {
     targets: targets,
-    callback: callback
-  });
+    callback: callback,
+    cancel: function () {
+      delete callbackItem.callback;
+    }
+  };
+  return callbackItem;
+}
+
+/**
+ * Register a callback item in the polling
+ */
+function registerCallbackItem(callbackItem) {
+  return callbacks.push(callbackItem);
 }
 
 /**
@@ -126,6 +140,12 @@ function validateInputs(targets, callback) {
 function filterCallbackItem(errors, item) {
   var targets = item.targets;
   var cb = item.callback;
+
+  // If the item has been cancelled, we want to remove
+  // it from the polling chain
+  if (!cb) {
+    return false;
+  }
 
   for (var index = 0; index < targets.length; index++) {
     var target = targets[index];
