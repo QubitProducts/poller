@@ -64,7 +64,9 @@ function tick() {
   tickCount += 1;
 
   var errors = {};
-  callbacks = _.filter(callbacks, _.bind(filterCallbackItem, null, errors));
+  callbacks = _.filter(callbacks, function (callbackItem) {
+    return filterCallbackItem(errors, callbackItem);
+  });
 
   // all poller callbacks have been satisfied
   if (callbacks.length === 0) {
