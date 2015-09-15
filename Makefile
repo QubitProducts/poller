@@ -7,11 +7,13 @@ BIN = $(ROOT)/node_modules/.bin
 SRC = **.js
 TESTS = test
 
-.PHONY: test watch
+.PHONY: lint test watch
 
-test:
-	$(BIN)/standard
+test: lint
 	$(BIN)/karma start --single-run
+
+lint:
+	$(BIN)/standard
 
 watch:
 	$(BIN)/karma start

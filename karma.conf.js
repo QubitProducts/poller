@@ -1,8 +1,6 @@
-var path = require('path')
-
 module.exports = function (config) {
-  var edge = process.argv.indexOf('--edge') > -1
   config.set({
+
     frameworks: ['mocha', 'sinon-chai'],
 
     files: [
@@ -23,11 +21,7 @@ module.exports = function (config) {
       devtool: 'inline-source-map',
       amd: { jQuery: true },
       resolve: {
-        extensions: ['', '.js', '.css'],
-        root: edge ? [
-          path.join(__dirname, '..', '..', 'test', 'lib'),
-          path.join(__dirname, '..', '..', 'test', 'vendor')
-        ] : []
+        extensions: ['', '.js', '.css']
       }
     },
 

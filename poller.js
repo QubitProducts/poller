@@ -1,24 +1,24 @@
-var $ = require('@qubit/jquery')
 var _ = require('@qubit/underscore')
-var attr = require('@qubit/attr')
+var requestAnimationFrame = require('./lib/raf')
+var exists = require('./lib/exists')
+var create = require('./lib/create')
+var now = require('./lib/now')
 
 /**
  * Constants - these are not configurable to
  * make polling more efficient by reusing the
  * same global timeout.
  */
-
-var INITIAL_TICK = 50 // The duration of the initial ticks before we start backing off
-var INCREASE_RATE = 1.5 // The backoff multiplier
-var BACKOFF_THRESHOLD = 5 // How many ticks before we start backing off
-var MAX_DURATION = 15000 // How much time before we stop polling completely
+var INITIAL_TICK = 16 // The initial tick interval duration before we start backing off (ms)
+var INCREASE_RATE = Math.round(1000 / 60) // The backoff multiplier
+var BACKOFF_THRESHOLD = Math.round((3 * 1000) / (1000 / 60)) // How many ticks before we start backing off
+var MAX_DURATION = 15000 // How long before we stop polling (ms)
 
 /**
  * Globals
  */
-var startTime, tickCount, currentTickDelay
+var start, tickCount, currentTickDelay
 var callbacks = []
-var active = false
 
 /**
  * Main poller method to register 'targets' to poll for
@@ -28,33 +28,22 @@ var active = false
  *   - a window variable formatted as a string e.g. 'window.universal_variable'
  *   - a function which returns a condition for which to stop the polling e.g.
  *     function () {
- *       return $(".some-class").length === 2
+ *       return $('.some-class').length === 2;
  *     }
  *   - an array of any of the above formats
  */
-module.exports = function poller (targets, callback) {
-  var callbackItem = createCallbackItem(targets, callback)
-  registerCallbackItem(callbackItem)
+function poller (targets, callback) {
+  var active = isActive()
+  var item = create(targets, callback)
+  register(item)
 
   // reset state
-  startTime = (+new Date())
-  tickCount = 0
-  currentTickDelay = INITIAL_TICK
+  init()
 
   // don't start ticking unless current ticking is inactive
-  if (!active) {
-    active = true
-    tick()
-  }
+  if (!active) tick()
 
-  return callbackItem.cancel
-}
-
-/**
- * A boolean check to see if the poller is currently active
- */
-module.exports.isActive = function isActive () {
-  return active
+  return item.cancel
 }
 
 /**
@@ -63,112 +52,70 @@ module.exports.isActive = function isActive () {
 function tick () {
   tickCount += 1
 
-  var errors = {}
-  callbacks = _.filter(callbacks, function (callbackItem) {
-    return filterCallbackItem(errors, callbackItem)
-  })
-
-  // all poller callbacks have been satisfied
-  if (callbacks.length === 0) {
-    active = false
-    return
-  }
+  var callQueue = []
+  callbacks = _.filter(callbacks, filterItems)
 
   // we've reached the max threshold
-  if ((+new Date() - startTime) > MAX_DURATION) {
-    active = false
-    callbacks = []
-    _.each(errors, function (error, index) {
-      console && console.error && console.error('Poller function errored at index ' + index + ': ' + error)
-    })
-    return
-  }
+  if ((now() - start) > MAX_DURATION) callbacks = []
 
-  // start increasing tick rate
-  if (tickCount > BACKOFF_THRESHOLD) {
-    currentTickDelay = currentTickDelay * INCREASE_RATE
-  }
-
-  setTimeout(tick, currentTickDelay)
-}
-
-/**
- * Adds callback item to the global array of callbacks
- */
-function createCallbackItem (targets, callback) {
-  validateInputs(targets, callback)
-  if (!_.isArray(targets)) {
-    targets = [targets]
-  }
-  targets = _.compact(targets)
-  var callbackItem = {
-    targets: targets,
-    callback: callback,
-    cancel: function () {
-      delete callbackItem.callback
-    }
-  }
-  return callbackItem
-}
-
-/**
- * Register a callback item in the polling
- */
-function registerCallbackItem (callbackItem) {
-  return callbacks.push(callbackItem)
-}
-
-/**
- * Validate the input parameters passed to poller
- */
-function validateInputs (targets, callback) {
-  if (typeof targets === 'number' || typeof targets === 'boolean') {
-    throw new Error([
-      'Expected first argument to be selector string',
-      'or array containing selectors, window variables or functions.'
-    ].join(' '))
-  }
-
-  if (typeof callback !== 'function') {
-    throw new Error('Expected second argument to be a callback function.')
-  }
-}
-
-/**
- * Filter callback item based on the polling validation each of the specified polling
- * targets (selectors, window vars or functions). If the callback item passes the
- * validation then it's success callback is fired.
- */
-function filterCallbackItem (errors, item) {
-  var targets = item.targets
-  var cb = item.callback
-
-  // If the item has been cancelled, we want to remove
-  // it from the polling chain
-  if (!cb) {
-    return false
-  }
-
-  for (var index = 0; index < targets.length; index++) {
-    var target = targets[index]
-    if (typeof target === 'function') {
-      try {
-        if (!target()) {
-          return true
-        }
-      } catch (err) {
-        errors[index] = err.stack
-        return true
-      }
-    } else if (target.indexOf('window.') === 0) {
-      if (typeof attr(window, target) === 'undefined') {
-        return true
-      }
-    } else if ($(target).length === 0) {
-      return true
+  if (isActive()) {
+    // start increasing tick rate
+    if (tickCount < BACKOFF_THRESHOLD) {
+      requestAnimationFrame(tick)
+    } else {
+      currentTickDelay = currentTickDelay * INCREASE_RATE
+      setTimeout(tick, currentTickDelay)
     }
   }
 
-  setTimeout(cb, 0)
-  return false
+  while (callQueue.length) {
+    try {
+      callQueue.pop()()
+    } catch (error) {
+      logError(error)
+    }
+  }
+
+  function filterItems (item) {
+    if (!_.isFunction(item.callback)) return false
+    try {
+      if (_.every(item.targets, exists)) {
+        callQueue.push(item.callback)
+        return false
+      }
+    } catch (error) {
+      logError(error)
+      return false
+    }
+    return true
+  }
 }
+
+function init () {
+  start = now()
+  tickCount = 0
+  currentTickDelay = INITIAL_TICK
+}
+
+function isActive () {
+  return !!callbacks.length
+}
+
+function register (item) {
+  return callbacks.push(item)
+}
+
+function reset () {
+  init()
+  callbacks = []
+}
+
+function logError (error) {
+  error.message = 'Poller function errored: ' + error.message
+  return console && console.error && console.error(error)
+}
+
+poller.isActive = isActive
+poller.reset = reset
+
+module.exports = poller
