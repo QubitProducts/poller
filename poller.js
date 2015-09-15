@@ -1,5 +1,6 @@
 var _ = require('@qubit/underscore')
 var requestAnimationFrame = require('./lib/raf')
+var observeMutations = require('./lib/observeMutations')
 var exists = require('./lib/exists')
 var create = require('./lib/create')
 var now = require('./lib/now')
@@ -19,6 +20,12 @@ var MAX_DURATION = 15000 // How long before we stop polling (ms)
  */
 var start, tickCount, currentTickDelay, timeout
 var callbacks = []
+
+observeMutations(function () {
+  if (callbacks.length) {
+    tock()
+  }
+})
 
 /**
  * Main poller method to register 'targets' to poll for
@@ -42,17 +49,32 @@ function poller (targets, callback) {
   init()
 
   // don't start ticking unless current ticking is inactive
-  if (!active) tick()
+  if (!active) {
+    tick()
+  }
 
   resetAfterMaxDuration()
 
   return item.cancel
 }
 
+function tick () {
+  tock()
+  if (isActive()) {
+    // start increasing tick rate
+    if (tickCount < BACKOFF_THRESHOLD) {
+      requestAnimationFrame(tick, currentTickDelay)
+    } else {
+      currentTickDelay = currentTickDelay * INCREASE_RATE
+      window.setTimeout(tick, currentTickDelay)
+    }
+  }
+}
+
 /**
  * Loop through all registered callbacks, polling for selectors or executing filter functions
  */
-function tick () {
+function tock () {
   tickCount += 1
 
   var callQueue = []
@@ -66,16 +88,6 @@ function tick () {
       callQueue.pop()()
     } catch (error) {
       logError(error)
-    }
-  }
-
-  if (isActive()) {
-    // start increasing tick rate
-    if (tickCount < BACKOFF_THRESHOLD) {
-      requestAnimationFrame(tick, currentTickDelay)
-    } else {
-      currentTickDelay = currentTickDelay * INCREASE_RATE
-      window.setTimeout(tick, currentTickDelay)
     }
   }
 
