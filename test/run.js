@@ -36,7 +36,7 @@ poller(['window.universal_variable.page.type', '#hero-image img', function () { 
 })
 
 setTimeout(function () {
-  $('body').append("<div class='test-div'/>")
+  $('body').append('<div class="test-div"/>')
 }, 2000)
 
 // Be able to poll for something after page load

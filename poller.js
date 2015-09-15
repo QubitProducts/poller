@@ -9,15 +9,15 @@ var now = require('./lib/now')
  * make polling more efficient by reusing the
  * same global timeout.
  */
-var INITIAL_TICK = 16 // The initial tick interval duration before we start backing off (ms)
-var INCREASE_RATE = Math.round(1000 / 60) // The backoff multiplier
+var INITIAL_TICK = Math.round(1000 / 60) // The initial tick interval duration before we start backing off (ms)
+var INCREASE_RATE = 1.5 // The backoff multiplier
 var BACKOFF_THRESHOLD = Math.round((3 * 1000) / (1000 / 60)) // How many ticks before we start backing off
 var MAX_DURATION = 15000 // How long before we stop polling (ms)
 
 /**
  * Globals
  */
-var start, tickCount, currentTickDelay
+var start, tickCount, currentTickDelay, timeout
 var callbacks = []
 
 /**
@@ -35,6 +35,7 @@ var callbacks = []
 function poller (targets, callback) {
   var active = isActive()
   var item = create(targets, callback)
+
   register(item)
 
   // reset state
@@ -42,6 +43,8 @@ function poller (targets, callback) {
 
   // don't start ticking unless current ticking is inactive
   if (!active) tick()
+
+  resetAfterMaxDuration()
 
   return item.cancel
 }
@@ -56,23 +59,23 @@ function tick () {
   callbacks = _.filter(callbacks, filterItems)
 
   // we've reached the max threshold
-  if ((now() - start) > MAX_DURATION) callbacks = []
-
-  if (isActive()) {
-    // start increasing tick rate
-    if (tickCount < BACKOFF_THRESHOLD) {
-      requestAnimationFrame(tick)
-    } else {
-      currentTickDelay = currentTickDelay * INCREASE_RATE
-      setTimeout(tick, currentTickDelay)
-    }
-  }
+  if ((now() - start) >= MAX_DURATION) callbacks = []
 
   while (callQueue.length) {
     try {
       callQueue.pop()()
     } catch (error) {
       logError(error)
+    }
+  }
+
+  if (isActive()) {
+    // start increasing tick rate
+    if (tickCount < BACKOFF_THRESHOLD) {
+      requestAnimationFrame(tick, currentTickDelay)
+    } else {
+      currentTickDelay = currentTickDelay * INCREASE_RATE
+      window.setTimeout(tick, currentTickDelay)
     }
   }
 
@@ -89,6 +92,11 @@ function tick () {
     }
     return true
   }
+}
+
+function resetAfterMaxDuration () {
+  clearTimeout(timeout)
+  timeout = window.setTimeout(reset, MAX_DURATION)
 }
 
 function init () {

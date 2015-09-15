@@ -17,14 +17,8 @@
     "@qubit/jquery": "^1.8.2",
     "@qubit/underscore": "^1.5.2"
   },
-  "standard": {
-    "globals": [
-      "describe",
-      "beforeEach",
-      "afterEach",
-      "it",
-      "expect",
-      "sinon"
-    ]
+  "devDependencies": {
+    "rewire": "^2.3.4",
+    "rewire-webpack": "^1.0.0"
   }
 }

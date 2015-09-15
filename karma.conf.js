@@ -1,3 +1,5 @@
+var RewirePlugin = require('rewire-webpack')
+
 module.exports = function (config) {
   config.set({
 
@@ -22,7 +24,8 @@ module.exports = function (config) {
       amd: { jQuery: true },
       resolve: {
         extensions: ['', '.js', '.css']
-      }
+      },
+      plugins: [new RewirePlugin()]
     },
 
     webpackServer: {

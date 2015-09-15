@@ -1,15 +1,18 @@
 /* globals define describe beforeEach afterEach it expect sinon */
 define(function (require) {
   var $ = require('@qubit/jquery')
-  var poller = require('../poller')
+  var rewire = require('rewire')
+  var poller = rewire('../poller')
 
   describe('pausing', function () {
     var clock
     var $container
+    var reverts
 
     beforeEach(function () {
-      clock = sinon.useFakeTimers()
       $container = $('<div class="container"/>').appendTo('body')
+      clock = sinon.useFakeTimers()
+      reverts = [poller.__set__('requestAnimationFrame', window.setTimeout)]
     })
 
     afterEach(function () {
@@ -17,26 +20,27 @@ define(function (require) {
       $container.remove()
       poller.reset()
       clock.restore()
+      while (reverts.length) reverts.pop()()
     })
 
     it('should poll after having been paused', function () {
       var cb = sinon.stub()
 
       poller('.foo', cb)
-      clock.tick(50)
+      clock.tick(poller.__get__('INITIAL_TICK'))
       expect(poller.isActive()).to.be.eql(true)
-      clock.tick(10000)
+      clock.tick(poller.__get__('INITIAL_TICK'))
       expect(poller.isActive()).to.be.eql(true)
-      clock.tick(10000)
+      clock.tick(poller.__get__('MAX_DURATION'))
       expect(cb.called).to.be.eql(false)
       expect(poller.isActive()).to.be.eql(false)
 
       // restart polling
       poller('.bar', cb)
       expect(poller.isActive()).to.be.eql(true)
-      clock.tick(10000)
+      clock.tick(poller.__get__('INITIAL_TICK'))
       expect(poller.isActive()).to.be.eql(true)
-      clock.tick(10000)
+      clock.tick(poller.__get__('MAX_DURATION') + poller.__get__('INITIAL_TICK'))
       expect(cb.called).to.be.eql(false)
       expect(poller.isActive()).to.be.eql(false)
     })
