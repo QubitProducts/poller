@@ -65,10 +65,18 @@ define(function (require) {
       }
 
       function firstFunc () {
-        poller([function () { return true }], secondFunc)
+        poller([
+          function () {
+            return true
+          }
+        ], secondFunc)
       }
 
-      poller([function () { return true }], firstFunc)
+      poller([
+        function () {
+          return true
+        }
+      ], firstFunc)
     })
   })
 })

@@ -1,6 +1,7 @@
 var _ = require('@qubit/underscore')
 var requestAnimationFrame = require('./lib/raf')
-var observeMutations = require('./lib/observeMutations')
+var validFrame = require('./lib/valid_frame')
+var observeMutations = require('./lib/observe_mutations')
 var exists = require('./lib/exists')
 var create = require('./lib/create')
 var now = require('./lib/now')
@@ -59,24 +60,24 @@ function poller (targets, callback) {
 }
 
 function tick () {
-  tock()
-  if (isActive()) {
-    // start increasing tick rate
-    if (tickCount < BACKOFF_THRESHOLD) {
-      requestAnimationFrame(tick, currentTickDelay)
-    } else {
-      currentTickDelay = currentTickDelay * INCREASE_RATE
-      window.setTimeout(tick, currentTickDelay)
-    }
+  tickCount += 1
+  var next = requestAnimationFrame
+  var shouldBackoff = tickCount >= BACKOFF_THRESHOLD
+  if (shouldBackoff) {
+    currentTickDelay = currentTickDelay * INCREASE_RATE
+    next = window.setTimeout
   }
+  if (shouldBackoff || validFrame(tickCount)) {
+    tock()
+  }
+  if (!isActive()) return
+  return next(tick, currentTickDelay)
 }
 
 /**
  * Loop through all registered callbacks, polling for selectors or executing filter functions
  */
 function tock () {
-  tickCount += 1
-
   var callQueue = []
   callbacks = _.filter(callbacks, filterItems)
 
