@@ -1,6 +1,8 @@
+var path = require('path')
 var RewirePlugin = require('rewire-webpack')
 
 module.exports = function (config) {
+  var edge = process.argv.indexOf('--edge') > -1
   config.set({
 
     frameworks: ['mocha', 'sinon-chai'],
@@ -23,7 +25,11 @@ module.exports = function (config) {
       devtool: 'inline-source-map',
       amd: { jQuery: true },
       resolve: {
-        extensions: ['', '.js', '.css']
+        extensions: ['', '.js', '.css'],
+        root: edge ? [
+          path.join(__dirname, '..', '..', 'test', 'lib'),
+          path.join(__dirname, '..', '..', 'test', 'vendor')
+        ] : []
       },
       plugins: [new RewirePlugin()]
     },
