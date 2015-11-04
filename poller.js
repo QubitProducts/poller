@@ -1,5 +1,6 @@
 var _ = require('@qubit/underscore')
 var requestAnimationFrame = require('./lib/raf')
+var disableMutationObserver = require('./lib/disable_mutation_observer')
 var validFrame = require('./lib/valid_frame')
 var observeMutations = require('./lib/observe_mutations')
 var exists = require('./lib/exists')
@@ -22,11 +23,13 @@ var MAX_DURATION = 15000 // How long before we stop polling (ms)
 var start, tickCount, currentTickDelay, timeout
 var callbacks = []
 
-observeMutations(function () {
-  if (callbacks.length) {
-    tock()
-  }
-})
+if (!disableMutationObserver()) {
+  observeMutations(function () {
+    if (callbacks.length) {
+      tock()
+    }
+  })
+}
 
 /**
  * Main poller method to register 'targets' to poll for
