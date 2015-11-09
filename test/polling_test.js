@@ -59,6 +59,17 @@ define(function (require) {
       }, 0)
     })
 
+    it('should retry when errors are thrown in filter function', function (done) {
+      poller(function () { return window.universal_variable.page.type === 'foo' }, done)
+      setTimeout(function () {
+        window.universal_variable = {
+          page: {
+            type: 'foo'
+          }
+        }
+      }, 0)
+    })
+
     it('should be able to handle callback functions that call poller', function (done) {
       function secondFunc () {
         done()

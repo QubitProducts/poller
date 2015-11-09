@@ -104,7 +104,7 @@ function tock () {
       }
     } catch (error) {
       logError(error)
-      return false
+      return true
     }
     return true
   }
