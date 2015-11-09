@@ -135,8 +135,10 @@ function reset () {
 }
 
 function logError (error) {
-  error.message = 'Poller function errored: ' + error.message
-  return console && console.error && console.error(error)
+  if (window.__qubit && window.__qubit.previewActive === true) {
+    error.message = 'Poller function errored: ' + error.message
+    return console && console.error && console.error(error)
+  }
 }
 
 poller.isActive = isActive
