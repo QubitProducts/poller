@@ -1,6 +1,6 @@
 {
   "name": "@qubit/poller",
-  "version": "1.3.9",
+  "version": "1.3.10",
   "description": "Poll for DOM element(s) or window variable existance",
   "main": "poller",
   "scripts": {
