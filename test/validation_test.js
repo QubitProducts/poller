@@ -16,7 +16,7 @@ define(function (require) {
       })
 
       it('should execute a function', function (done) {
-        poller(function () { return true }, done)
+        poller(function () { return true }, function () { done() })
       })
     })
 

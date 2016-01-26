@@ -17,28 +17,28 @@ define(function (require) {
     })
 
     it('should poll for window variables', function (done) {
-      poller(['window.universal_variable.page.type'], done)
+      poller(['window.universal_variable.page.type'], function () { done() })
       setTimeout(function () {
         window.universal_variable = { page: { type: 'foo' } }
       }, 0)
     })
 
     it('should poll for selectors', function (done) {
-      poller('.some-el', done)
+      poller('.some-el', function () { done() })
       setTimeout(function () {
         $('<div>').addClass('some-el').appendTo($container)
       }, 0)
     })
 
     it('should poll for selector arrays', function (done) {
-      poller(['.some-el'], done)
+      poller(['.some-el'], function () { done() })
       setTimeout(function () {
         $('<div>').addClass('some-el').appendTo($container)
       }, 0)
     })
 
     it('should poll for selector arrays with multiple items', function (done) {
-      poller(['.some-el', '.other-el'], done)
+      poller(['.some-el', '.other-el'], function () { done() })
       setTimeout(function () {
         $container.append('<div class="some-el"></div><div class="other-el"></div>')
       }, 0)
@@ -47,7 +47,7 @@ define(function (require) {
     it('should poll for a mixture of targets', function (done) {
       var later = false
       $('.some-el').remove()
-      poller(['.some-el', 'window.universal_variable.page.type', function () { return later }], done)
+      poller(['.some-el', 'window.universal_variable.page.type', function () { return later }], function () { done() })
       setTimeout(function () {
         later = true
         $('<div>').addClass('some-el').appendTo($container)
@@ -60,7 +60,7 @@ define(function (require) {
     })
 
     it('should retry when errors are thrown in filter function', function (done) {
-      poller(function () { return window.universal_variable.page.type === 'foo' }, done)
+      poller(function () { return window.universal_variable.page.type === 'foo' }, function () { done() })
       setTimeout(function () {
         window.universal_variable = {
           page: {

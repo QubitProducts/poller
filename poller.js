@@ -3,7 +3,7 @@ var requestAnimationFrame = require('./lib/raf')
 var disableMutationObserver = require('./lib/disable_mutation_observer')
 var validFrame = require('./lib/valid_frame')
 var observeMutations = require('./lib/observe_mutations')
-var exists = require('./lib/exists')
+var evaluate = require('./lib/evaluate')
 var create = require('./lib/create')
 var now = require('./lib/now')
 
@@ -87,9 +87,11 @@ function tock () {
   // we've reached the max threshold
   if ((now() - start) >= MAX_DURATION) callbacks = []
 
+  var callItem
   while (callQueue.length) {
     try {
-      callQueue.pop()()
+      callItem = callQueue.pop()
+      callItem.callback.apply(null, callItem.params)
     } catch (error) {
       logError(error)
     }
@@ -98,8 +100,17 @@ function tock () {
   function filterItems (item) {
     if (!_.isFunction(item.callback)) return false
     try {
-      if (_.every(item.targets, exists)) {
-        callQueue.push(item.callback)
+      var evaluated = []
+      var passed = _.every(item.targets, function (target) {
+        var result = evaluate(target)
+        evaluated.push(result)
+        return !_.isUndefined(result)
+      })
+      if (passed) {
+        callQueue.push({
+          callback: item.callback,
+          params: evaluated
+        })
         return false
       }
     } catch (error) {
