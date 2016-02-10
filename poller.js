@@ -4,6 +4,7 @@ var disableMutationObserver = require('./lib/disable_mutation_observer')
 var validFrame = require('./lib/valid_frame')
 var observeMutations = require('./lib/observe_mutations')
 var evaluate = require('./lib/evaluate')
+var validate = require('./lib/validate')
 var create = require('./lib/create')
 var now = require('./lib/now')
 
@@ -45,6 +46,11 @@ if (!disableMutationObserver()) {
  */
 function poller (targets, callback) {
   var active = isActive()
+
+  var error = validate(targets, callback)
+  if (error) {
+    return logError(error)
+  }
   var item = create(targets, callback)
 
   register(item)
