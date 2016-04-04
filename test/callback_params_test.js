@@ -4,6 +4,7 @@ define(function (require) {
   var poller = require('../poller')
 
   describe('poller', function () {
+    this.timeout(4000)
     var $container
 
     beforeEach(function () {
