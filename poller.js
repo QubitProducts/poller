@@ -47,10 +47,12 @@ if (!disableMutationObserver()) {
 function poller (targets, callback) {
   var active = isActive()
 
-  var error = validate(targets, callback)
-  if (error) {
-    return logError(error)
+  try {
+    validate(targets, callback)
+  } catch (e) {
+    logError(e)
   }
+
   var item = create(targets, callback)
 
   register(item)
