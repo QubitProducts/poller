@@ -40,7 +40,7 @@ if (!disableMutationObserver()) {
  *   - a window variable formatted as a string e.g. 'window.universal_variable'
  *   - a function which returns a condition for which to stop the polling e.g.
  *     function () {
- *       return $('.some-class').length === 2;
+ *       return $('.some-class').length === 2
  *     }
  *   - an array of any of the above formats
  */
@@ -50,7 +50,7 @@ function poller (targets, callback) {
   try {
     validate(targets, callback)
   } catch (e) {
-    logError(e)
+    return logError(e)
   }
 
   var item = create(targets, callback)
@@ -155,8 +155,7 @@ function reset () {
 
 function logError (error) {
   if (window.__qubit && window.__qubit.previewActive === true) {
-    error.message = 'Poller function errored: ' + error.message
-    return console && console.error && console.error(error)
+    throw new Error('Poller function errored: ' + error.message, error.stack)
   }
 }
 
