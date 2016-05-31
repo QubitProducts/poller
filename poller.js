@@ -1,4 +1,3 @@
-var _ = require('@qubit/underscore')
 var requestAnimationFrame = require('./lib/raf')
 var disableMutationObserver = require('./lib/disable_mutation_observer')
 var validFrame = require('./lib/valid_frame')
@@ -7,6 +6,9 @@ var evaluate = require('./lib/evaluate')
 var validate = require('./lib/validate')
 var create = require('./lib/create')
 var now = require('./lib/now')
+
+var filter = require('slapdash').filter
+var find = require('slapdash').find
 
 /**
  * Constants - these are not configurable to
@@ -90,7 +92,7 @@ function tick () {
  */
 function tock () {
   var callQueue = []
-  callbacks = _.filter(callbacks, filterItems)
+  callbacks = filter(callbacks, filterItems)
 
   // we've reached the max threshold
   if ((now() - start) >= MAX_DURATION) callbacks = []
@@ -106,13 +108,13 @@ function tock () {
   }
 
   function filterItems (item) {
-    if (!_.isFunction(item.callback)) return false
+    if (typeof item.callback !== 'function') return false
     try {
       var evaluated = []
-      var passed = _.every(item.targets, function (target) {
+      var passed = !!find(item.targets, function (target) {
         var result = evaluate(target)
         evaluated.push(result)
-        return !_.isUndefined(result)
+        return typeof result !== 'undefined'
       })
       if (passed) {
         callQueue.push({

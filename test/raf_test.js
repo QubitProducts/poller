@@ -1,5 +1,5 @@
 define(function (require) {
-  var _ = require('@qubit/underscore')
+  var indexOf = require('slapdash').indexOf
   var rewire = require('rewire')
   var poller = rewire('../poller')
   var validFrame = require('../lib/valid_frame')
@@ -50,7 +50,7 @@ define(function (require) {
     function checkAllValidFrameCalls () {
       for (var i = 0; i < validFrameSpy.callCount; i++) {
         var call = validFrameSpy.getCall(i)
-        if (_.contains(validFrames, (i % 60) + 1)) {
+        if (indexOf(validFrames, (i % 60) + 1) !== -1) {
           expect(call.returnValue).to.be.true
         } else {
           expect(call.returnValue).to.be.false
