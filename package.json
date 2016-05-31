@@ -20,5 +20,16 @@
   "devDependencies": {
     "rewire": "^2.3.4",
     "rewire-webpack": "^1.0.0"
+  },
+  "standard": {
+    "globals": [
+      "define",
+      "describe",
+      "it",
+      "beforeEach",
+      "afterEach",
+      "expect",
+      "sinon"
+    ]
   }
 }

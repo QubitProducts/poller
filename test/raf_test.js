@@ -1,4 +1,3 @@
-/* globals define describe beforeEach afterEach it sinon expect */
 define(function (require) {
   var _ = require('@qubit/underscore')
   var rewire = require('rewire')
