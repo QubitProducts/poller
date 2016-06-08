@@ -1,5 +1,6 @@
+/* globals define describe beforeEach afterEach it sinon expect */
 define(function (require) {
-  var indexOf = require('slapdash').indexOf
+  var _ = require('@qubit/underscore')
   var rewire = require('rewire')
   var poller = rewire('../poller')
   var validFrame = require('../lib/valid_frame')
@@ -50,7 +51,7 @@ define(function (require) {
     function checkAllValidFrameCalls () {
       for (var i = 0; i < validFrameSpy.callCount; i++) {
         var call = validFrameSpy.getCall(i)
-        if (indexOf(validFrames, (i % 60) + 1) !== -1) {
+        if (_.contains(validFrames, (i % 60) + 1)) {
           expect(call.returnValue).to.be.true
         } else {
           expect(call.returnValue).to.be.false

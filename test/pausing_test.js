@@ -1,3 +1,4 @@
+/* globals define describe beforeEach afterEach it expect sinon */
 define(function (require) {
   var $ = require('@qubit/jquery')
   var rewire = require('rewire')

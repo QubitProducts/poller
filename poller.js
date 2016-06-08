@@ -1,14 +1,11 @@
+var _ = require('@qubit/underscore')
 var requestAnimationFrame = require('./lib/raf')
 var disableMutationObserver = require('./lib/disable_mutation_observer')
 var validFrame = require('./lib/valid_frame')
 var observeMutations = require('./lib/observe_mutations')
 var evaluate = require('./lib/evaluate')
-var validate = require('./lib/validate')
 var create = require('./lib/create')
 var now = require('./lib/now')
-
-var filter = require('slapdash').filter
-var find = require('slapdash').find
 
 /**
  * Constants - these are not configurable to
@@ -42,19 +39,12 @@ if (!disableMutationObserver()) {
  *   - a window variable formatted as a string e.g. 'window.universal_variable'
  *   - a function which returns a condition for which to stop the polling e.g.
  *     function () {
- *       return $('.some-class').length === 2
+ *       return $('.some-class').length === 2;
  *     }
  *   - an array of any of the above formats
  */
 function poller (targets, callback) {
   var active = isActive()
-
-  try {
-    validate(targets, callback)
-  } catch (e) {
-    return logError(e)
-  }
-
   var item = create(targets, callback)
 
   register(item)
@@ -92,7 +82,7 @@ function tick () {
  */
 function tock () {
   var callQueue = []
-  callbacks = filter(callbacks, filterItems)
+  callbacks = _.filter(callbacks, filterItems)
 
   // we've reached the max threshold
   if ((now() - start) >= MAX_DURATION) callbacks = []
@@ -108,13 +98,13 @@ function tock () {
   }
 
   function filterItems (item) {
-    if (typeof item.callback !== 'function') return false
+    if (!_.isFunction(item.callback)) return false
     try {
       var evaluated = []
-      var passed = !!find(item.targets, function (target) {
+      var passed = _.every(item.targets, function (target) {
         var result = evaluate(target)
         evaluated.push(result)
-        return typeof result !== 'undefined'
+        return !_.isUndefined(result)
       })
       if (passed) {
         callQueue.push({
@@ -157,9 +147,8 @@ function reset () {
 
 function logError (error) {
   if (window.__qubit && window.__qubit.previewActive === true) {
-    error = new Error('Poller function errored: ' + error.message, error.stack)
-    error.code = 'EPOLLER'
-    throw error
+    error.message = 'Poller function errored: ' + error.message
+    return console && console.error && console.error(error)
   }
 }
 

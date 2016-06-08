@@ -1,3 +1,4 @@
+/* globals define describe beforeEach afterEach expect it */
 define(function (require) {
   var $ = require('@qubit/jquery')
   var poller = require('../poller')
