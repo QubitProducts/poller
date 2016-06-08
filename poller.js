@@ -157,7 +157,9 @@ function reset () {
 
 function logError (error) {
   if (window.__qubit && window.__qubit.previewActive === true) {
-    throw new Error('Poller function errored: ' + error.message, error.stack)
+    error = new Error('Poller function errored: ' + error.message, error.stack)
+    error.code = 'EPOLLER'
+    throw error
   }
 }
 

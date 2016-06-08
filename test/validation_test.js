@@ -1,9 +1,6 @@
 define(function (require) {
   var poller = require('../poller')
-  var checkPollerError = function (err, expected) {
-    var extractedError = err.message.replace(/^Poller\sfunction\serrored:\s/, '')
-    expect(extractedError).to.eql(expected)
-  }
+  var POLLER_ERROR = 'EPOLLER'
 
   describe('validation', function () {
     afterEach(function () {
@@ -34,11 +31,7 @@ define(function (require) {
           try {
             poller(12345, function () {})
           } catch (err) {
-            return checkPollerError(
-              err,
-              'Expected first argument to be selector string ' +
-              'or array containing selectors, window variables or functions.'
-            )
+            return expect(err.code).to.eql(POLLER_ERROR)
           }
           throw new Error('poller did not throw an error')
         })
@@ -47,11 +40,7 @@ define(function (require) {
           try {
             poller(true, function () {})
           } catch (err) {
-            return checkPollerError(
-              err,
-              'Expected first argument to be selector string ' +
-              'or array containing selectors, window variables or functions.'
-            )
+            return expect(err.code).to.eql(POLLER_ERROR)
           }
           throw new Error('poller did not throw an error')
         })
@@ -60,11 +49,7 @@ define(function (require) {
           try {
             poller(null, function () {})
           } catch (err) {
-            return checkPollerError(
-              err,
-              'Expected first argument to be selector string ' +
-              'or array containing selectors, window variables or functions.'
-            )
+            return expect(err.code).to.eql(POLLER_ERROR)
           }
           throw new Error('poller did not throw an error')
         })
@@ -73,11 +58,7 @@ define(function (require) {
           try {
             poller(undefined, function () {})
           } catch (err) {
-            return checkPollerError(
-              err,
-              'Expected first argument to be selector string ' +
-              'or array containing selectors, window variables or functions.'
-            )
+            return expect(err.code).to.eql(POLLER_ERROR)
           }
           throw new Error('poller did not throw an error')
         })
@@ -86,11 +67,7 @@ define(function (require) {
           try {
             poller({}, function () {})
           } catch (err) {
-            return checkPollerError(
-              err,
-              'Expected first argument to be selector string ' +
-              'or array containing selectors, window variables or functions.'
-            )
+            return expect(err.code).to.eql(POLLER_ERROR)
           }
           throw new Error('poller did not throw an error')
         })
@@ -104,11 +81,7 @@ define(function (require) {
             try {
               poller(12345, function () {})
             } catch (err) {
-              return checkPollerError(
-                err,
-                'Expected first argument to be selector string ' +
-                'or array containing selectors, window variables or functions.'
-              )
+              return expect(err.code).to.eql(POLLER_ERROR)
             }
             throw new Error('poller did not throw an error')
           })
@@ -117,11 +90,7 @@ define(function (require) {
             try {
               poller(true, function () {})
             } catch (err) {
-              return checkPollerError(
-                err,
-                'Expected first argument to be selector string ' +
-                'or array containing selectors, window variables or functions.'
-              )
+              return expect(err.code).to.eql(POLLER_ERROR)
             }
             throw new Error('poller did not throw an error')
           })
@@ -130,11 +99,7 @@ define(function (require) {
             try {
               poller(null, function () {})
             } catch (err) {
-              return checkPollerError(
-                err,
-                'Expected first argument to be selector string ' +
-                'or array containing selectors, window variables or functions.'
-              )
+              return expect(err.code).to.eql(POLLER_ERROR)
             }
             throw new Error('poller did not throw an error')
           })
@@ -143,11 +108,7 @@ define(function (require) {
             try {
               poller(undefined, function () {})
             } catch (err) {
-              return checkPollerError(
-                err,
-                'Expected first argument to be selector string ' +
-                'or array containing selectors, window variables or functions.'
-              )
+              return expect(err.code).to.eql(POLLER_ERROR)
             }
             throw new Error('poller did not throw an error')
           })
@@ -156,11 +117,7 @@ define(function (require) {
             try {
               poller({}, function () {})
             } catch (err) {
-              return checkPollerError(
-                err,
-                'Expected first argument to be selector string ' +
-                'or array containing selectors, window variables or functions.'
-              )
+              return expect(err.code).to.eql(POLLER_ERROR)
             }
             throw new Error('poller did not throw an error')
           })
@@ -172,7 +129,7 @@ define(function (require) {
           try {
             poller('noop')
           } catch (err) {
-            return checkPollerError(err, 'Expected second argument to be a callback function.')
+            return expect(err.code).to.eql(POLLER_ERROR)
           }
           throw new Error('poller did not throw an error')
         })
