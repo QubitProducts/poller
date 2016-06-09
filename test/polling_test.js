@@ -90,4 +90,22 @@ define(function (require) {
       ], firstFunc)
     })
   })
+
+  it('should not run the callback if only the first argument passes', function (done) {
+    var cbFired = false
+    window.universal_variable = {
+      page: {
+        type: 'foo'
+      }
+    }
+    poller(['window.universal_variable.page.type', 'window.somethingelse'], function () {
+      cbFired = true
+    })
+    setTimeout(function () {
+      if (cbFired) {
+        done(new Error('should not have fired'))
+      }
+      done()
+    }, 0)
+  })
 })
