@@ -1,4 +1,4 @@
-var _ = require('@qubit/underscore')
+var _ = require('slapdash')
 var requestAnimationFrame = require('./lib/raf')
 var disableMutationObserver = require('./lib/disable_mutation_observer')
 var validFrame = require('./lib/valid_frame')
@@ -105,21 +105,22 @@ function tock () {
   }
 
   function filterItems (item) {
-    if (!_.isFunction(item.callback)) return false
+    if (typeof item.callback !== 'function') return false
     try {
       var evaluated = []
-      var passed = _.every(item.targets, function (target) {
-        var result = evaluate(target)
+      var result
+      for (var i = 0; i < item.targets.length; i++) {
+        result = evaluate(item.targets[i])
+        if (typeof result === 'undefined') {
+          return true
+        }
         evaluated.push(result)
-        return !_.isUndefined(result)
-      })
-      if (passed) {
-        callQueue.push({
-          callback: item.callback,
-          params: evaluated
-        })
-        return false
       }
+      callQueue.push({
+        callback: item.callback,
+        params: evaluated
+      })
+      return false
     } catch (error) {
       logError(error)
       return true
