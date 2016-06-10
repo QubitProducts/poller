@@ -15,9 +15,5 @@
   "dependencies": {
     "@qubit/jquery": "^1.8.2",
     "slapdash": "^1.1.0"
-  },
-  "devDependencies": {
-    "rewire": "^2.3.4",
-    "rewire-webpack": "^1.0.0"
   }
 }
