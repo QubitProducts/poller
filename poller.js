@@ -125,7 +125,6 @@ function tock () {
       logError(error)
       return true
     }
-    return true
   }
 }
 
