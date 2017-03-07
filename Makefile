@@ -13,7 +13,7 @@ test: lint
 	$(BIN)/karma start --single-run
 
 lint:
-	$(BIN)/standard
+	$(BIN)/standard5
 
 watch:
 	$(BIN)/karma start
