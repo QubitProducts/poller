@@ -7,6 +7,7 @@ var evaluate = require('./lib/evaluate')
 var validate = require('./lib/validate')
 var create = require('./lib/create')
 var now = require('./lib/now')
+var log = require('driftwood')('poller')
 
 /**
  * Constants - these are not configurable to
@@ -105,23 +106,29 @@ function tock () {
   }
 
   function filterItems (item) {
-    if (typeof item.callback !== 'function') return false
+    var callback = item.callback
+    var targets = item.targets
+    var len = targets.length
+    var i = 0
+    if (typeof callback !== 'function') return false
     try {
       var evaluated = []
       var result
-      for (var i = 0; i < item.targets.length; i++) {
-        result = evaluate(item.targets[i])
+      for (i = 0; i < len; i++) {
+        result = evaluate(targets[i])
         if (typeof result === 'undefined') {
+          item.remainders = targets.slice(i)
           return true
         }
         evaluated.push(result)
       }
       callQueue.push({
-        callback: item.callback,
+        callback: callback,
         params: evaluated
       })
       return false
     } catch (error) {
+      item.remainders = item.targets.slice(i)
       logError(error)
       return true
     }
@@ -149,6 +156,15 @@ function register (item) {
 
 function reset () {
   init()
+  log.info('Poller complete')
+  if (callbacks.length) {
+    log.info('Logging unresolved items')
+    callbacks.forEach(item => {
+      if (item.remainders) {
+        log.debug(item.remainders)
+      }
+    })
+  }
   callbacks = []
 }
 
