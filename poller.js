@@ -159,7 +159,7 @@ function reset () {
   log.debug('Poller complete')
   if (callbacks.length) {
     log.debug('Logging unresolved items')
-    callbacks.forEach(item => {
+    callbacks.forEach(function (item) {
       if (item.remainders) {
         log.debug(item.remainders)
       }
