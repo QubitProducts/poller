@@ -156,9 +156,9 @@ function register (item) {
 
 function reset () {
   init()
-  log.info('Poller complete')
+  log.debug('Poller complete')
   if (callbacks.length) {
-    log.info('Logging unresolved items')
+    log.debug('Logging unresolved items')
     callbacks.forEach(item => {
       if (item.remainders) {
         log.debug(item.remainders)
