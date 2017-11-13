@@ -1,38 +1,64 @@
 @qubit/poller
-=====
+=============
 
-### Examples
+Poller allows you to test for certain elements to be on site or certain conditions to be true before proceeding with a callback function.
+
+### Usage
 
 ```js
 var poller = require('@qubit/poller')
-// 1.
-poller('.nav', cb)
 
-// 2.
-poller(function() { return true }, cb)
+// Poll for DOM elements using `jquery` by passing in a selector
+poller(['body > .nav'], cb)
 
-// 3.
-poller(['.nav', '.header'], cb)
 
-// 4.
-poller(['.nav', 'window.universal_variable'], cb)
+// Pass in custom functions to be tested. Any truthy value returned will be considered a passing condition.
+poller([function() { return true }], cb)
 
-// 5.
-poller(['.nav', 'window.universal_variable', function () {
-  return true
-}], cb)
+
+// Shorthand for testing window variables are not undefined
+poller(['window.foo.bar'], cb)
+
+// which is equivalent to
+poller([() => { return window.foo && typeof window.foo.bar !== 'undefined' }], cb)
+
+
+// Or mix and match
+poller(['body > .nav', 'window.foo', () => true], cb)
+
 ```
 
-The resulting targets will be passed into the `cb` in the same order:
+The resulting targets will be passed back into the `cb` function in the same order:
 
 ```js
-poller(['.nav', 'window.universal_variable.page.type', function () {
-  return window.foo()
-}], function ($nav, pageType, bar) {
-  ...
-})
+
+poller(
+  [ 'body > .nav', 'window.page.type', () => window.foo ],
+  function cb ($nav, pageType, foo) {
+    console.log($nav)
+    // => jQuery instance of `.nav` DOM element
+    
+    console.log(pageType)
+    // => 'home'
+    
+    console.log(foo)
+    // => 'bar'
+  }
+)
+
+window.page = { type: 'home' }
+window.foo = 'bar'
 ```
 
-## Todo
-* Test multiple intervals (from 10-200ms, linearly increasing on each poll)
-* Test difference methods of polling (setTimeout / setInterval, requestAnimationFrame, mutationObservers)
+You can cancel a poller by calling the function that is returned:
+```js
+const cancel = poller(['body, > .nav'], cb)
+
+// Cancel if not resolved within 5 seconds
+setTimeout(() => cancel(), 5000)
+```
+
+The max polling time is 15 seconds, meaning if the conditions are not all met after this time, polling will automatially be cancelled.
+
+### Performance
+Since the main usage of this library is to ensure certain DOM elements are present on page, performance is optimised by using `MutationObserver` if available. Failing this, poller will use `setTimeout` with a backoff multiplier of 1.5 after 3 seconds
