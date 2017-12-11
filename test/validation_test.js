@@ -11,11 +11,8 @@ define(function (require) {
     it('should not poll if an error is thrown', function () {
       try {
         poller(12345, function () {}) // This should fail validation
-      } catch (err) {
-        // noop
-      } finally {
-        return expect(poller.isActive()).to.eql(false)
-      }
+      } catch (err) {}
+      return expect(poller.isActive()).to.eql(false)
     })
 
     describe('while in preview', function () {
