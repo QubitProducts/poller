@@ -132,6 +132,17 @@ define(function (require) {
           throw new Error('poller did not throw an error')
         })
       })
+
+      describe('the third argument', function () {
+        it('should be a callback function', function () {
+          try {
+            poller('noop', function () {}, 123)
+          } catch (err) {
+            return expect(err.code).to.eql(POLLER_ERROR)
+          }
+          throw new Error('poller did not throw an error')
+        })
+      })
     })
   })
 })

@@ -45,15 +45,15 @@ if (!disableMutationObserver()) {
  *     }
  *   - an array of any of the above formats
  */
-function poller (targets, callback) {
+function poller (targets, callback, onTimeout) {
   var active = isActive()
 
   try {
-    validate(targets, callback)
+    validate(targets, callback, onTimeout)
   } catch (e) {
     return logError(e)
   }
-  var item = create(targets, callback)
+  var item = create(targets, callback, onTimeout)
 
   register(item)
 
@@ -162,6 +162,7 @@ function reset () {
     callbacks.forEach(function (item) {
       if (item.remainders) {
         log.debug(item.remainders)
+        item.onTimeout && item.onTimeout(item.remainders)
       }
     })
   }
