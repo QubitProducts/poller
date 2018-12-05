@@ -60,5 +60,17 @@ setTimeout(() => cancel(), 5000)
 
 The max polling time is 15 seconds, meaning if the conditions are not all met after this time, polling will automatially be cancelled.
 
+In the event that you want a function to run when the poller expires, you can pass a timeout handler:
+```js
+poller(
+  ['window.foo', function () { return false }, 'body'], // targets (note second parameter will never pass returning false)
+  cb, // Would be 'done' function
+  function (remainders) { console.log('poller timed out: ', remainders) } // onTimeout handler which logs params
+)
+
+window.foo = 'bar'
+// => poller timed out: [f, 'body']
+```
+
 ### Performance
 Since the main usage of this library is to ensure certain DOM elements are present on page, performance is optimised by using `MutationObserver` if available. Failing this, poller will use `setTimeout` with a backoff multiplier of 1.5 after 3 seconds
