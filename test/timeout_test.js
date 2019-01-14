@@ -1,6 +1,8 @@
-/* globals define describe beforeEach afterEach it expect sinon */
+/* globals define describe beforeEach afterEach it */
 define(function (require) {
   var $ = require('@qubit/jquery')
+  var expect = require('expect.js')
+  var sinon = require('sinon')
   var rewire = require('rewire')
   var poller = rewire('../poller')
 
