@@ -34,13 +34,13 @@ The resulting targets will be passed back into the `cb` function in the same ord
 
 poller(
   [ 'body > .nav', 'window.page.type', () => window.foo ],
-  function cb ($nav, pageType, foo) {
-    console.log($nav)
+  function cb (nav, pageType, foo) {
+    console.log(nav)
     // => jQuery instance of `.nav` DOM element
-    
+
     console.log(pageType)
     // => 'home'
-    
+
     console.log(foo)
     // => 'bar'
   }
