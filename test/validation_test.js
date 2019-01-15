@@ -10,7 +10,7 @@ describe('validation', function () {
 
   it('should not poll if an error is thrown', function () {
     try {
-      poller(12345, function () {}) // This should fail validation
+      poller(12345) // This should fail validation
     } catch (err) {}
     return expect(poller.isActive()).to.eql(false)
   })
@@ -27,7 +27,7 @@ describe('validation', function () {
     describe('the first argument', function () {
       it('should not be a number', function () {
         try {
-          poller(12345, function () {})
+          poller(12345)
         } catch (err) {
           return expect(err.code).to.eql(POLLER_ERROR)
         }
@@ -36,7 +36,7 @@ describe('validation', function () {
 
       it('should not be a boolean', function () {
         try {
-          poller(true, function () {})
+          poller(true)
         } catch (err) {
           return expect(err.code).to.eql(POLLER_ERROR)
         }
@@ -45,7 +45,7 @@ describe('validation', function () {
 
       it('should not be null', function () {
         try {
-          poller(null, function () {})
+          poller(null)
         } catch (err) {
           return expect(err.code).to.eql(POLLER_ERROR)
         }
@@ -54,7 +54,7 @@ describe('validation', function () {
 
       it('should not be undefined', function () {
         try {
-          poller(undefined, function () {})
+          poller(undefined)
         } catch (err) {
           return expect(err.code).to.eql(POLLER_ERROR)
         }
@@ -63,7 +63,7 @@ describe('validation', function () {
 
       it('should not be an object', function () {
         try {
-          poller({}, function () {})
+          poller({})
         } catch (err) {
           return expect(err.code).to.eql(POLLER_ERROR)
         }
@@ -71,13 +71,15 @@ describe('validation', function () {
       })
 
       it('should execute a function', function (done) {
-        poller(function () { return true }, function () { done() })
+        poller(function () { return true })
+          .start()
+          .then(function () { done() })
       })
 
       describe('as an array', function () {
         it('should not contain a number', function () {
           try {
-            poller(12345, function () {})
+            poller(12345).start()
           } catch (err) {
             return expect(err.code).to.eql(POLLER_ERROR)
           }
@@ -86,7 +88,7 @@ describe('validation', function () {
 
         it('should not contain a boolean', function () {
           try {
-            poller(true, function () {})
+            poller(true)
           } catch (err) {
             return expect(err.code).to.eql(POLLER_ERROR)
           }
@@ -95,7 +97,7 @@ describe('validation', function () {
 
         it('should not contain null', function () {
           try {
-            poller(null, function () {})
+            poller(null)
           } catch (err) {
             return expect(err.code).to.eql(POLLER_ERROR)
           }
@@ -104,7 +106,7 @@ describe('validation', function () {
 
         it('should not contain undefined', function () {
           try {
-            poller(undefined, function () {})
+            poller(undefined)
           } catch (err) {
             return expect(err.code).to.eql(POLLER_ERROR)
           }
@@ -113,29 +115,7 @@ describe('validation', function () {
 
         it('should not contain an object', function () {
           try {
-            poller({}, function () {})
-          } catch (err) {
-            return expect(err.code).to.eql(POLLER_ERROR)
-          }
-          throw new Error('poller did not throw an error')
-        })
-      })
-    })
-
-    describe('the second argument', function () {
-      it('should be a callback function', function () {
-        try {
-          poller('noop')
-        } catch (err) {
-          return expect(err.code).to.eql(POLLER_ERROR)
-        }
-        throw new Error('poller did not throw an error')
-      })
-
-      describe('the third argument', function () {
-        it('should be a callback function', function () {
-          try {
-            poller('noop', function () {}, 123)
+            poller({})
           } catch (err) {
             return expect(err.code).to.eql(POLLER_ERROR)
           }

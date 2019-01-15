@@ -30,36 +30,38 @@ describe('cancelling', function () {
 
   it('should remove the corresponding callback from the polling chain', function () {
     var fooCb = sinon.stub()
-    var cancelFoo = poller('.foo', fooCb)
+    var poll = poller('.foo')
+    poll.start().then(fooCb)
     expect(poller.isActive()).to.eql(true)
 
-    cancelFoo()
+    poll.stop()
 
     // make it exist
     $container.append($foo)
 
     clock.tick(poller.__get__('INITIAL_TICK'))
-    expect(poller.isActive()).to.be.eql(false)
-    expect(fooCb.called).to.be.eql(false)
+    expect(poller.isActive()).to.eql(false)
+    expect(fooCb.called).to.eql(false)
   })
 
   it('should continue polling for other callback items after cancelling another', function () {
     var fooCb = sinon.stub()
     var barCb = sinon.stub()
-    var cancelFoo = poller('.foo', fooCb)
-    poller('.bar', barCb)
+    var poll = poller('.foo')
+    poll.start().then(fooCb)
+    poller('.bar').start().then(barCb)
 
-    cancelFoo()
+    poll.stop()
     clock.tick(poller.__get__('INITIAL_TICK') * 2)
-    expect(poller.isActive()).to.be.eql(true)
-    expect(fooCb.called).to.be.eql(false)
-    expect(barCb.called).to.be.eql(false)
+    expect(poller.isActive()).to.eql(true)
+    expect(fooCb.called).to.eql(false)
+    expect(barCb.called).to.eql(false)
 
     // make foo and bar elements exist
     $container.append($bar, $foo)
     clock.tick(poller.__get__('INITIAL_TICK') * 2)
-    expect(poller.isActive()).to.be.eql(false)
-    expect(fooCb.called).to.be.eql(false)
-    expect(barCb.called).to.be.eql(true)
+    expect(poller.isActive()).to.eql(false)
+    expect(fooCb.called).to.eql(false)
+    expect(barCb.called).to.eql(true)
   })
 })

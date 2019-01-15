@@ -7,7 +7,7 @@ var poller = rewire('../poller')
 var validFrame = require('../lib/valid_frame')
 var validFrames = validFrame.getValidFrames()
 
-describe('request animation frame', function () {
+describe.only('request animation frame', function () {
   this.timeout(5000)
 
   var reverts, validFrameSpy
@@ -24,26 +24,32 @@ describe('request animation frame', function () {
   })
 
   it('should only fire on valid frames per second', function (done) {
-    poller('window.bgark.mcgee', function () {
-      // Should be ~60frames === 1 second at ~60fps
-      expect(validFrameSpy.callCount).to.be.below(65)
-      expect(validFrameSpy.callCount).to.be.above(55)
-      checkAllValidFrameCalls()
-      done()
-    })
+    poller('window.bgark.mcgee')
+      .start()
+      .then(function () {
+        // Should be ~60frames === 1 second at ~60fps
+        expect(validFrameSpy.callCount).to.be.below(65)
+        expect(validFrameSpy.callCount).to.be.above(55)
+        checkAllValidFrameCalls()
+        done()
+      })
+      .catch(done)
     setTimeout(function () {
       window.bgark.mcgee = true
     }, 1000)
   })
 
   it('should only last until the backoff threshold', function (done) {
-    poller('window.bgark.mcgee', function () {
-      // Should be ~180frames === 3 seconds at ~60fps
-      expect(validFrameSpy.callCount).to.be.below(185)
-      expect(validFrameSpy.callCount).to.be.above(175)
-      checkAllValidFrameCalls()
-      done()
-    })
+    poller('window.bgark.mcgee')
+      .start()
+      .then(function () {
+        // Should be ~180frames === 3 seconds at ~60fps
+        expect(validFrameSpy.callCount).to.be.below(185)
+        expect(validFrameSpy.callCount).to.be.above(175)
+        checkAllValidFrameCalls()
+        done()
+      })
+      .catch(done)
     setTimeout(function () {
       window.bgark.mcgee = true
     }, 4000)
@@ -53,9 +59,9 @@ describe('request animation frame', function () {
     for (var i = 0; i < validFrameSpy.callCount; i++) {
       var call = validFrameSpy.getCall(i)
       if (indexOf(validFrames, (i % 60) + 1) !== -1) {
-        expect(call.returnValue).to.be.true
+        expect(call.returnValue).to.eql(true)
       } else {
-        expect(call.returnValue).to.be.false
+        expect(call.returnValue).to.eql(false)
       }
     }
   }

@@ -1,72 +1,80 @@
 @qubit/poller
 =============
 
-Poller allows you to test for certain elements to be on site or certain conditions to be true before proceeding with a callback function.
+Poller allows you to test for certain elements to be on site or certain conditions to be true before proceeding with a callback function
 
 ### Usage
 
 ```js
 var poller = require('@qubit/poller')
 
-// Poll for DOM elements using `jquery` by passing in a selector
-poller(['body > .nav'], cb)
+// Poll for DOM elements by passing in a selector
+poller(['body > .nav']).start().then(cb)
+
+poller(['body > .nav']).start().then(cb)
 
 
-// Pass in custom functions to be tested. Any truthy value returned will be considered a passing condition.
-poller([function() { return true }], cb)
+// Pass in custom functions to be tested
+// Any truthy value returned will be considered a passing condition
+poller([function () { return true })).start().then(cb)
 
 
-// Shorthand for testing window variables are not undefined
-poller(['window.foo.bar'], cb)
+// Shorthand for testing that window variables are not undefined
+poller(['window.foo.bar']).start().then(cb)
 
 // which is equivalent to
-poller([() => { return window.foo && typeof window.foo.bar !== 'undefined' }], cb)
+poller([function () {
+  return window.foo && typeof window.foo.bar !== 'undefined'
+}])
+.start()
+.then(cb)
 
 
 // Or mix and match
-poller(['body > .nav', 'window.foo', () => true], cb)
+poller(['body > .nav', 'window.foo', () => true])
+  .start()
+  .then(cb)
 
 ```
 
-The resulting targets will be passed back into the `cb` function in the same order:
+The items being polled for will be passed to your callback function in the same order:
 
 ```js
-
-poller(
-  [ 'body > .nav', 'window.page.type', () => window.foo ],
-  function cb (nav, pageType, foo) {
+poller([ 'body > .nav', 'window.page.type', () => window.foo ])
+  .start()
+  .then(function cb ([nav, pageType, foo]) {
     console.log(nav)
-    // => jQuery instance of `.nav` DOM element
+    // => `.nav` DOM element
 
     console.log(pageType)
     // => 'home'
 
     console.log(foo)
     // => 'bar'
-  }
-)
+  })
 
 window.page = { type: 'home' }
 window.foo = 'bar'
 ```
 
-You can cancel a poller by calling the function that is returned:
+You can stop poller from polling by calling stop on your polling instance:
 ```js
-const cancel = poller(['body, > .nav'], cb)
+const poll = poller(['body, > .nav'])
+poll.start()
 
 // Cancel if not resolved within 5 seconds
-setTimeout(() => cancel(), 5000)
+setTimeout(poll.stop, 5000)
 ```
 
-The max polling time is 15 seconds, meaning if the conditions are not all met after this time, polling will automatially be cancelled.
+The max polling time is 15 seconds - if all conditions are not all met within this time, polling will stop
 
-In the event that you want a function to run when the poller expires, you can pass a timeout handler:
+In the event that you want a function to run when the poller times out, you can pass a time out handler:
 ```js
-poller(
-  ['window.foo', function () { return false }, 'body'], // targets (note second parameter will never pass returning false)
-  cb, // Would be 'done' function
-  function (remainders) { console.log('poller timed out: ', remainders) } // onTimeout handler which logs params
-)
+poller(['window.foo', function () { return false }, 'body'])
+  .then(cb)
+  .catch(function (err) {
+    console.log(err)
+  })
 
 window.foo = 'bar'
 // => poller timed out: [f, 'body']

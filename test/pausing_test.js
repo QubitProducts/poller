@@ -27,7 +27,7 @@ describe('pausing', function () {
   it('should poll after having been paused', function () {
     var cb = sinon.stub()
 
-    poller('.foo', cb)
+    poller('.foo').start().then(cb)
     clock.tick(poller.__get__('INITIAL_TICK'))
     expect(poller.isActive()).to.be.eql(true)
     clock.tick(poller.__get__('INITIAL_TICK'))
@@ -37,7 +37,7 @@ describe('pausing', function () {
     expect(poller.isActive()).to.be.eql(false)
 
     // restart polling
-    poller('.bar', cb)
+    poller('.bar').start().then(cb)
     expect(poller.isActive()).to.be.eql(true)
     clock.tick(poller.__get__('INITIAL_TICK'))
     expect(poller.isActive()).to.be.eql(true)

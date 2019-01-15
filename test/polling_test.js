@@ -1,7 +1,6 @@
 /* globals describe beforeEach afterEach it */
 var $ = require('@qubit/jquery')
 var poller = require('../poller')
-var expect = require('expect.js')
 
 describe('poller', function () {
   var $container
@@ -17,28 +16,44 @@ describe('poller', function () {
   })
 
   it('should poll for window variables', function (done) {
-    poller(['window.universal_variable.page.type'], function () { done() })
+    poller(['window.universal_variable.page.type'])
+      .start()
+      .then(function () {
+        done()
+      })
     setTimeout(function () {
       window.universal_variable = { page: { type: 'foo' } }
     }, 0)
   })
 
   it('should poll for selectors', function (done) {
-    poller('.some-el', function () { done() })
+    poller('.some-el')
+      .start()
+      .then(function () {
+        done()
+      })
     setTimeout(function () {
       $('<div>').addClass('some-el').appendTo($container)
     }, 0)
   })
 
   it('should poll for selector arrays', function (done) {
-    poller(['.some-el'], function () { done() })
+    poller(['.some-el'])
+      .start()
+      .then(function () {
+        done()
+      })
     setTimeout(function () {
       $('<div>').addClass('some-el').appendTo($container)
     }, 0)
   })
 
   it('should poll for selector arrays with multiple items', function (done) {
-    poller(['.some-el', '.other-el'], function () { done() })
+    poller(['.some-el', '.other-el'])
+      .start()
+      .then(function () {
+        done()
+      })
     setTimeout(function () {
       $container.append('<div class="some-el"></div><div class="other-el"></div>')
     }, 0)
@@ -47,7 +62,15 @@ describe('poller', function () {
   it('should poll for a mixture of targets', function (done) {
     var later = false
     $('.some-el').remove()
-    poller(['.some-el', 'window.universal_variable.page.type', function () { return later }], function () { done() })
+    poller([
+      '.some-el',
+      'window.universal_variable.page.type',
+      function () { return later }
+    ])
+    .start()
+    .then(function () {
+      done()
+    })
     setTimeout(function () {
       later = true
       $('<div>').addClass('some-el').appendTo($container)
@@ -60,7 +83,11 @@ describe('poller', function () {
   })
 
   it('should retry when errors are thrown in filter function', function (done) {
-    poller(function () { return window.universal_variable.page.type === 'foo' }, function () { done() })
+    poller(function () { return window.universal_variable.page.type === 'foo' })
+      .start()
+      .then(function () {
+        done()
+      })
     setTimeout(function () {
       window.universal_variable = {
         page: {
@@ -80,14 +107,18 @@ describe('poller', function () {
         function () {
           return true
         }
-      ], secondFunc)
+      ])
+      .start()
+      .then(secondFunc)
     }
 
     poller([
       function () {
         return true
       }
-    ], firstFunc)
+    ])
+    .start()
+    .then(firstFunc)
   })
 })
 
@@ -98,9 +129,11 @@ it('should not run the callback if only the first argument passes', function (do
       type: 'foo'
     }
   }
-  poller(['window.universal_variable.page.type', 'window.somethingelse'], function () {
-    cbFired = true
-  })
+  poller(['window.universal_variable.page.type', 'window.somethingelse'])
+    .start()
+    .then(function () {
+      cbFired = true
+    })
   setTimeout(function () {
     if (cbFired) {
       done(new Error('should not have fired'))

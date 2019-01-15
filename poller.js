@@ -1,4 +1,5 @@
 var _ = require('slapdash')
+var defer = require('sync-p/defer')
 var requestAnimationFrame = require('./lib/raf')
 var disableMutationObserver = require('./lib/disable_mutation_observer')
 var validFrame = require('./lib/valid_frame')
@@ -45,29 +46,37 @@ if (!disableMutationObserver()) {
  *     }
  *   - an array of any of the above formats
  */
-function poller (targets, callback, onTimeout) {
+
+function poller (targets) {
+  var deferred = defer()
   var active = isActive()
 
   try {
-    validate(targets, callback, onTimeout)
-  } catch (e) {
-    return logError(e)
+    validate(targets)
+  } catch (error) {
+    logError(error)
   }
-  var item = create(targets, callback, onTimeout)
+  var item = create(targets, deferred.resolve, deferred.reject)
 
-  register(item)
+  return {
+    start: function start () {
+      register(item)
 
-  // reset state
-  init()
+      // reset state
+      init()
 
-  // don't start ticking unless current ticking is inactive
-  if (!active) {
-    tick()
+      // don't start ticking unless current ticking is inactive
+      if (!active) {
+        tick()
+      }
+
+      resetAfterMaxDuration()
+      return deferred.promise
+    },
+    stop: function stop () {
+      unregister(item)
+    }
   }
-
-  resetAfterMaxDuration()
-
-  return item.cancel
 }
 
 function tick () {
@@ -99,7 +108,7 @@ function tock () {
   while (callQueue.length) {
     try {
       callItem = callQueue.pop()
-      callItem.callback.apply(null, callItem.params)
+      callItem.callback(callItem.params)
     } catch (error) {
       logError(error)
     }
@@ -154,6 +163,12 @@ function register (item) {
   return callbacks.push(item)
 }
 
+function unregister (item) {
+  callbacks = callbacks.filter(function (i) {
+    return i !== item
+  })
+}
+
 function reset () {
   init()
   log.debug('Poller complete')
@@ -162,7 +177,7 @@ function reset () {
     callbacks.forEach(function (item) {
       if (item.remainders) {
         log.debug(item.remainders)
-        item.onTimeout && item.onTimeout(item.remainders)
+        item.onTimeout && item.onTimeout(new Error('Poller timed out'))
       }
     })
   }
@@ -170,14 +185,16 @@ function reset () {
 }
 
 function logError (error) {
+  error = new Error('Poller function errored: ' + error.message, error.stack)
+  error.code = 'EPOLLER'
+  log.error(error)
   if (window.__qubit && window.__qubit.previewActive === true) {
-    error = new Error('Poller function errored: ' + error.message, error.stack)
-    error.code = 'EPOLLER'
     throw error
   }
 }
 
 poller.isActive = isActive
 poller.reset = reset
+poller.log = log
 
 module.exports = poller
