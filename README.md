@@ -11,8 +11,20 @@ var poller = require('@qubit/poller')
 // Poll for DOM elements by passing in a selector
 poller(['body > .nav']).start().then(cb)
 
-poller(['body > .nav']).start().then(cb)
+// Create a poller instance
+var poll = poller(['body > .nav', 'window.foo.bar', function () { return true }])
 
+// The start method begins polling, returning a promise that resolves
+// when all the stated requirements can be returned
+poll.start().then(function getItems (params) {
+  var nav = params[0]
+  var bar = params[1]
+  var truthyThing = params[2]
+  console.log(nav, bar, truthyThing)
+})
+
+// Stop polling
+poll.stop()
 
 // Pass in custom functions to be tested
 // Any truthy value returned will be considered a passing condition
