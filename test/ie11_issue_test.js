@@ -6,12 +6,12 @@ var expect = require('expect.js')
 
 describe('disableMutationObserver', function () {
   it('returns false by default', function () {
-    expect(disableMutationObserver(chrome)).to.be.false
+    expect(disableMutationObserver(chrome)).to.eql(false)
   })
 
   it('detects the global config flag if ie11', function () {
     window.__qubit = { disableMutationObserver: true }
-    expect(disableMutationObserver()).to.be.false
-    expect(disableMutationObserver(ie)).to.be.true
+    expect(disableMutationObserver()).to.eql(false)
+    expect(disableMutationObserver(ie)).to.eql(true)
   })
 })
