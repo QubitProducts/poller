@@ -7,7 +7,7 @@ var poller = rewire('../poller')
 var validFrame = require('../lib/valid_frame')
 var validFrames = validFrame.getValidFrames()
 
-describe.only('request animation frame', function () {
+describe('request animation frame', function () {
   this.timeout(5000)
 
   var reverts, validFrameSpy

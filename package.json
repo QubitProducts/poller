@@ -4,7 +4,7 @@
   "description": "Poll for DOM element(s) or window variable existance",
   "main": "poller",
   "scripts": {
-    "test": "karma start"
+    "test": "karma start --single-run"
   },
   "keywords": [
     "poll",
