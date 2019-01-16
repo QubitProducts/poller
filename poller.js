@@ -160,6 +160,7 @@ function isActive () {
 }
 
 function register (item) {
+  unregister(item)
   return callbacks.push(item)
 }
 
