@@ -7,7 +7,6 @@ var observeMutations = require('./lib/observe_mutations')
 var evaluate = require('./lib/evaluate')
 var validate = require('./lib/validate')
 var create = require('./lib/create')
-var now = require('./lib/now')
 var log = require('driftwood')('poller')
 
 /**
@@ -23,7 +22,7 @@ var MAX_DURATION = 15000 // How long before we stop polling (ms)
 /**
  * Globals
  */
-var start, tickCount, currentTickDelay, timeout
+var tickCount, currentTickDelay, timeout
 var callbacks = []
 
 if (!disableMutationObserver()) {
@@ -59,23 +58,25 @@ function poller (targets) {
   var item = create(targets, deferred.resolve, deferred.reject)
 
   return {
-    start: function start () {
-      register(item)
+    start: start,
+    stop: stop
+  }
 
-      // reset state
-      init()
+  function start () {
+    register(item)
 
-      // don't start ticking unless current ticking is inactive
-      if (!active) {
-        tick()
-      }
+    // reset state
+    init()
 
-      resetAfterMaxDuration()
-      return deferred.promise
-    },
-    stop: function stop () {
-      unregister(item)
-    }
+    // don't start ticking unless current ticking is inactive
+    if (!active) tick()
+
+    resetAfterMaxDuration()
+    return deferred.promise
+  }
+
+  function stop () {
+    return unregister(item)
   }
 }
 
@@ -101,25 +102,16 @@ function tock () {
   var callQueue = []
   callbacks = _.filter(callbacks, filterItems)
 
-  // we've reached the max threshold
-  if ((now() - start) >= MAX_DURATION) callbacks = []
-
   var callItem
   while (callQueue.length) {
-    try {
-      callItem = callQueue.pop()
-      callItem.callback(callItem.params)
-    } catch (error) {
-      logError(error)
-    }
+    callItem = callQueue.pop()
+    callItem.resolve(callItem.params)
   }
 
   function filterItems (item) {
-    var callback = item.callback
     var targets = item.targets
     var len = targets.length
     var i = 0
-    if (typeof callback !== 'function') return false
     try {
       var evaluated = []
       var result
@@ -132,7 +124,7 @@ function tock () {
         evaluated.push(result)
       }
       callQueue.push({
-        callback: callback,
+        resolve: item.resolve,
         params: evaluated
       })
       return false
@@ -146,11 +138,14 @@ function tock () {
 
 function resetAfterMaxDuration () {
   clearTimeout(timeout)
-  timeout = window.setTimeout(reset, MAX_DURATION)
+  timeout = window.setTimeout(function () {
+    log.debug('Poller complete')
+    timeoutUnresolvedItems()
+    reset()
+  }, MAX_DURATION)
 }
 
 function init () {
-  start = now()
   tickCount = 0
   currentTickDelay = INITIAL_TICK
 }
@@ -165,31 +160,37 @@ function register (item) {
 }
 
 function unregister (item) {
-  callbacks = callbacks.filter(function (i) {
+  callbacks = _.filter(callbacks, function (i) {
     return i !== item
   })
+  if (item.remainders) {
+    return item.remainders[0]
+  }
+}
+
+function timeoutUnresolvedItems () {
+  if (callbacks.length) {
+    log.debug('Logging unresolved items')
+    callbacks.forEach(function (item) {
+      var remainder = unregister(item)
+      if (remainder) {
+        log.debug(remainder)
+        item.reject(new Error('Poller timed out: could not resolve ' + String(remainder)))
+      }
+    })
+  }
 }
 
 function reset () {
   init()
-  log.debug('Poller complete')
-  if (callbacks.length) {
-    log.debug('Logging unresolved items')
-    callbacks.forEach(function (item) {
-      if (item.remainders) {
-        log.debug(item.remainders)
-        item.onTimeout && item.onTimeout(new Error('Poller timed out'))
-      }
-    })
-  }
   callbacks = []
 }
 
 function logError (error) {
-  error = new Error('Poller function errored: ' + error.message, error.stack)
+  error = new Error('function errored: ' + error.message, error.stack)
   error.code = 'EPOLLER'
   log.error(error)
-  if (window.__qubit && window.__qubit.previewActive === true) {
+  if (_.get(window, '__qubit.previewActive')) {
     throw error
   }
 }
