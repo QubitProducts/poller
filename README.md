@@ -38,11 +38,8 @@ var poll = poller(['body > .nav', 'window.foo.bar', function () {
 poll
   // Start polling - the start method returns a promise for the items being polled for
   .start()
-  .then(function (items) {
-    // The items being polled for will be passed to your callback function
-    var nav = items[0]
-    var bar = items[1]
-    var truthyThing = items[2]
+  .then(function ([nav, bar, truthyThing]) {
+    // The array of items being polled for will be passed to your callback function
     console.log(nav, bar, truthyThing)
   })
 
