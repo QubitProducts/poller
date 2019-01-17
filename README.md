@@ -6,29 +6,40 @@ Poller allows you to wait for:
   - window variables to be defined
   - arbitrary conditions to be met
 
-...and returns a promise for those elements, variables or the results of your custom poll functions
+and returns a promise for those elements, variables or the results of your custom poll functions
 
-### Usage
+### Simple usage
 
 ```js
 var poller = require('@qubit/poller')
 
-// Simple case: poll for DOM elements by passing in a selector
-poller(['body > .nav']).start().then(function (items) {
-  var nav = items[0]
-  console.log(nav)
-})
+// Wait for DOM elements by passing in a selector:
+poller(['body > .nav']).start().then(cb)
 
+// Wait for variables on the window object to be defined:
+poller(['window.foo.bar']).start().then(cb)
+
+// Wait for arbitrary conditions to be true by passing in a custom function:
+poller([() => true]).start().then(cb)
+
+// Mix and match:
+poller(['body > .nav', 'window.foo', () => true]).start().then(cb)
+
+```
+
+### Advanced usage
+
+```js
 // Create a poller instance with several targets
 var poll = poller(['body > .nav', 'window.foo.bar', function () {
   return true
 }])
 
 poll
-  // Start polling
+  // Start polling - the start method returns a promise for the items being polled for
   .start()
-  // The start method returns a promise for the items being polled for
   .then(function (items) {
+    // The items being polled for will be passed to your callback function
     var nav = items[0]
     var bar = items[1]
     var truthyThing = items[2]
@@ -37,21 +48,8 @@ poll
 
 // Stop polling
 poll.stop()
-
-var $ = require('jquery')
-
-// Custom functions allow you to poll for arbitrary conditions
-poller([function checkModalVisibility () {
-  return $('.modal:visible')
-}])
-.start()
-.then(cb)
-
-// Poll for variables on the window object (these resolve when the variable is no longer undefined)
-poller(['window.foo.bar']).start().then(function (items) {
-  var bar = items[0]
-})
 ```
+
 The max polling time is 15 seconds - if all conditions are not all met within this time, polling will stop
 
 However you can stop polling earlier by calling stop on your polling instance:
@@ -61,17 +59,16 @@ poll.start()
 setTimeout(poll.stop, 5000)
 ```
 
-When the poller times out the promise is rejected. You can handle this case like so:
+When the poller times out the promise is rejected
+It's possible to run a function when the poller expires by handling this case like so:
 ```js
-poller(['window.foo', () => false, 'body'])
+poller([() => false])
   .start()
   .then(cb)
   .catch(function (err) {
     console.log(err)
     // => Poller timed out: could not resolve function () { return false }
   })
-
-window.foo = 'bar'
 ```
 
 ### Performance
