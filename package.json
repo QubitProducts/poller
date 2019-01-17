@@ -37,5 +37,17 @@
     "sinon": "^7.2.2",
     "standard": "^10.0.3",
     "webpack": "^1.0.0"
-  }
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qubitdigital/poller.git"
+  },
+  "bugs": {
+    "url": "https://github.com/qubitdigital/poller/issues"
+  },
+  "homepage": "https://github.com/qubitdigital/poller#readme"
 }
