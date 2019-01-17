@@ -145,7 +145,7 @@ function tock () {
 function resetAfterMaxDuration () {
   clearTimeout(timeout)
   timeout = window.setTimeout(function () {
-    log.debug('Poller complete')
+    log.debug('Complete')
     timeoutUnresolvedItems()
     reset()
   }, MAX_DURATION)
@@ -180,7 +180,7 @@ function timeoutUnresolvedItems () {
     callbacks.forEach(function (item) {
       // There should always be a remainder if poller times out
       var remainder = unregister(item)
-      log.debug(remainder)
+      log.debug('Could not resolve ' + String(remainder))
       item.reject(new Error('Poller timed out: could not resolve ' + String(remainder)))
     })
   }

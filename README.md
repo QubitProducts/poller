@@ -68,7 +68,7 @@ poller(['window.foo', () => false, 'body'])
   .then(cb)
   .catch(function (err) {
     console.log(err)
-    // => poller timed out: could not resolve function () { return false }
+    // => Poller timed out: could not resolve function () { return false }
   })
 
 window.foo = 'bar'
