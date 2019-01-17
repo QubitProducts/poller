@@ -63,9 +63,9 @@ describe('poller', function () {
     var later = false
     $('.some-el').remove()
     poller([
+      function () { return later },
       '.some-el',
-      'window.universal_variable.page.type',
-      function () { return later }
+      'window.universal_variable.page.type'
     ])
     .start()
     .then(function () {

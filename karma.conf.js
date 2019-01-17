@@ -30,7 +30,7 @@ module.exports = function (config) {
     },
     coverageReporter: {
       check: {
-        global: { statements: 95, lines: 95, functions: 95, branches: 80 }
+        global: { statements: 95, lines: 95, functions: 95, branches: 90 }
       }
     },
     browsers: [ 'Chrome' ]

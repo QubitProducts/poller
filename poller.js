@@ -178,11 +178,10 @@ function timeoutUnresolvedItems () {
   if (callbacks.length) {
     log.debug('Logging unresolved items')
     callbacks.forEach(function (item) {
+      // There should always be a remainder if poller times out
       var remainder = unregister(item)
-      if (remainder) {
-        log.debug(remainder)
-        item.reject(new Error('Poller timed out: could not resolve ' + String(remainder)))
-      }
+      log.debug(remainder)
+      item.reject(new Error('Poller timed out: could not resolve ' + String(remainder)))
     })
   }
 }
