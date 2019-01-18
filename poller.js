@@ -1,9 +1,7 @@
 var _ = require('slapdash')
 var defer = require('sync-p/defer')
 var requestAnimationFrame = require('./lib/raf')
-var disableMutationObserver = require('./lib/disable_mutation_observer')
 var validFrame = require('./lib/valid_frame')
-var observeMutations = require('./lib/observe_mutations')
 var evaluate = require('./lib/evaluate')
 var validate = require('./lib/validate')
 var create = require('./lib/create')
@@ -24,14 +22,6 @@ var MAX_DURATION = 15000 // How long before we stop polling (ms)
  */
 var tickCount, currentTickDelay, timeout
 var callbacks = []
-
-if (!disableMutationObserver()) {
-  observeMutations(function () {
-    if (callbacks.length) {
-      tock()
-    }
-  })
-}
 
 /**
  * Main poller method to register 'targets' to poll for
