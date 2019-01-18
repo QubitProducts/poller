@@ -25,8 +25,7 @@ describe('request animation frame', function () {
   })
 
   it('should only fire on valid frames per second', function (done) {
-    poller('window.bgark.mcgee')
-      .start()
+    poller('window.bgark.mcgee')()
       .then(function () {
         // Should be ~60frames === 1 second at ~60fps
         expect(validFrameSpy.callCount).to.be.below(65)
@@ -41,8 +40,7 @@ describe('request animation frame', function () {
   })
 
   it('should only last until the backoff threshold', function (done) {
-    poller('window.bgark.mcgee')
-      .start()
+    poller('window.bgark.mcgee')()
       .then(function () {
         // Should be ~180frames === 3 seconds at ~60fps
         expect(validFrameSpy.callCount).to.be.below(185)

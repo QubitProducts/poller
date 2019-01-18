@@ -71,15 +71,14 @@ describe('validation', function () {
       })
 
       it('should execute a function', function (done) {
-        poller(function () { return true })
-          .start()
+        poller(function () { return true })()
           .then(function () { done() })
       })
 
       describe('as an array', function () {
         it('should not contain a number', function () {
           try {
-            poller(12345).start()
+            poller(12345)()
           } catch (err) {
             return expect(err.code).to.eql(POLLER_ERROR)
           }

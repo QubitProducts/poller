@@ -63,10 +63,9 @@ function poller (targets) {
     unregister(item)
   })
 
-  return {
-    start: start,
-    stop: stop
-  }
+  start.stop = stop
+
+  return start
 
   function start () {
     register(item)
