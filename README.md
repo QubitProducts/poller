@@ -45,6 +45,9 @@ poll()
 
 // Stop polling
 poll.stop()
+
+// Start polling again
+poll()
 ```
 
 The max polling time is 15 seconds - if all conditions are not all met within this time, polling will stop
@@ -66,6 +69,3 @@ poller([() => false])()
     // => Poller timed out: could not resolve function () { return false }
   })
 ```
-
-### Performance
-Since the main usage of this library is to ensure certain DOM elements are present on page, performance is optimised by using `MutationObserver` if available. Failing this, poller will use `requestAnimationFrame`, or `setTimeout` with a backoff multiplier of 1.5 after 3 seconds
