@@ -31,7 +31,7 @@ describe('cancelling', function () {
   it('should remove the corresponding callback from the polling chain', function () {
     var fooCb = sinon.stub()
     var poll = poller('.foo')
-    poll().then(fooCb)
+    poll.then(fooCb)
     expect(poller.isActive()).to.eql(true)
 
     poll.stop()
@@ -48,8 +48,8 @@ describe('cancelling', function () {
     var fooCb = sinon.stub()
     var barCb = sinon.stub()
     var poll = poller('.foo')
-    poll().then(fooCb)
-    poller('.bar')().then(barCb)
+    poll.then(fooCb)
+    poller('.bar').then(barCb)
 
     poll.stop()
     clock.tick(poller.__get__('INITIAL_TICK') * 2)

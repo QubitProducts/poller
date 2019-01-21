@@ -18,7 +18,7 @@ describe('poller', function () {
   })
 
   it('should return window variables', function (done) {
-    poller(['window.universal_variable.page.type'])().then(function ([pageType]) {
+    poller(['window.universal_variable.page.type']).then(function ([pageType]) {
       expect(pageType).to.eql('foo')
       done()
     })
@@ -29,7 +29,7 @@ describe('poller', function () {
 
   it('should return jquery elements', function (done) {
     var $someEl = $('<div>').addClass('some-el')
-    poller(['.some-el'])().then(function ([el]) {
+    poller(['.some-el']).then(function ([el]) {
       expect(el[0]).to.eql($someEl[0])
       done()
     })
@@ -39,7 +39,7 @@ describe('poller', function () {
   })
 
   it('should return function values', function (done) {
-    poller([ function () { return 'bar' } ])().then(function ([foo]) {
+    poller([ function () { return 'bar' } ]).then(function ([foo]) {
       expect(foo).to.eql('bar')
       done()
     })

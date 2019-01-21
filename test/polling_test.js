@@ -16,7 +16,7 @@ describe('poller', function () {
   })
 
   it('should poll for window variables', function (done) {
-    poller(['window.universal_variable.page.type'])()
+    poller(['window.universal_variable.page.type'])
       .then(function () {
         done()
       })
@@ -26,7 +26,7 @@ describe('poller', function () {
   })
 
   it('should poll for selectors', function (done) {
-    poller('.some-el')()
+    poller('.some-el')
       .then(function () {
         done()
       })
@@ -36,7 +36,7 @@ describe('poller', function () {
   })
 
   it('should poll for selector arrays', function (done) {
-    poller(['.some-el'])()
+    poller(['.some-el'])
       .then(function () {
         done()
       })
@@ -46,7 +46,7 @@ describe('poller', function () {
   })
 
   it('should poll for selector arrays with multiple items', function (done) {
-    poller(['.some-el', '.other-el'])()
+    poller(['.some-el', '.other-el'])
       .then(function () {
         done()
       })
@@ -62,7 +62,7 @@ describe('poller', function () {
       function () { return later },
       '.some-el',
       'window.universal_variable.page.type'
-    ])()
+    ])
     .then(function () {
       done()
     })
@@ -78,7 +78,7 @@ describe('poller', function () {
   })
 
   it('should retry when errors are thrown in filter function', function (done) {
-    poller(function () { return window.universal_variable.page.type === 'foo' })()
+    poller(function () { return window.universal_variable.page.type === 'foo' })
       .then(function () {
         done()
       })
@@ -101,7 +101,7 @@ describe('poller', function () {
         function () {
           return true
         }
-      ])()
+      ])
       .then(secondFunc)
     }
 
@@ -109,7 +109,7 @@ describe('poller', function () {
       function () {
         return true
       }
-    ])()
+    ])
     .then(firstFunc)
   })
 })
@@ -121,7 +121,7 @@ it('should not run the callback if only the first argument passes', function (do
       type: 'foo'
     }
   }
-  poller(['window.universal_variable.page.type', 'window.somethingelse'])()
+  poller(['window.universal_variable.page.type', 'window.somethingelse'])
     .then(function () {
       cbFired = true
     })

@@ -29,8 +29,7 @@ describe('timemout', function () {
   it('should call the timeout callback when the poller times out', function () {
     var fooCb = sinon.stub()
     var barCb = sinon.stub()
-    poller('.foo')()
-      .then(fooCb, barCb)
+    poller('.foo').then(fooCb, barCb)
 
     expect(poller.isActive()).to.eql(true)
     clock.tick(poller.__get__('MAX_DURATION') + 1)
@@ -42,8 +41,7 @@ describe('timemout', function () {
   it('should not call the timeout callback when the poller completes', function () {
     var fooCb = sinon.stub()
     var barCb = sinon.stub()
-    poller('.foo')()
-      .then(fooCb, barCb)
+    poller('.foo').then(fooCb, barCb)
 
     // make it exist
     $container.append($foo)
@@ -58,7 +56,8 @@ describe('timemout', function () {
   it('should not call the timeout callback when the poller is cancelled', function () {
     var fooCb = sinon.stub()
     var barCb = sinon.stub()
-    var poll = poller('.foo', fooCb, barCb)
+    var poll = poller('.foo')
+    poll.then(fooCb, barCb)
 
     poll.stop()
 
