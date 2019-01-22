@@ -45,7 +45,7 @@ function poller (targets, opts) {
   }, opts)
 
   try {
-    validate(targets, opts)
+    validate(targets, opts, options.logger)
 
     var item = create(targets, deferred.resolve, deferred.reject)
 
@@ -126,7 +126,7 @@ function poller (targets, opts) {
               return true
             } else {
               item.evaluated.push(result)
-              options.logger.info('resolved ' + String(targets[i]))
+              options.logger.info('Poller: resolved ' + String(targets[i]))
             }
           }
         }
@@ -147,7 +147,7 @@ function poller (targets, opts) {
     clearTimeout(timeout)
     timeout = window.setTimeout(function () {
       timeoutUnresolvedItems()
-      options.logger.info('complete')
+      options.logger.info('Poller: complete')
       reset()
     }, options.timeout)
   }
@@ -157,8 +157,8 @@ function poller (targets, opts) {
       callbacks.forEach(function (item) {
         // There should always be a remainder if poller times out
         var remainder = String(unregister(item))
-        options.logger.info('could not resolve ' + remainder)
-        item.reject(new Error('Could not resolve ' + remainder))
+        options.logger.info('Poller: could not resolve ' + remainder)
+        item.reject(new Error('Poller: could not resolve ' + remainder))
       })
     }
   }
@@ -200,5 +200,6 @@ function reset () {
 
 poller.isActive = isActive
 poller.reset = reset
+poller.logger = logger
 
 module.exports = poller

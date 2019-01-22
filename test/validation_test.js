@@ -2,6 +2,7 @@
 var _ = require('slapdash')
 var poller = require('../poller')
 var POLLER_ERROR = 'EPOLLER'
+var sinon = require('sinon')
 var expect = require('expect.js')
 
 describe('validation', function () {
@@ -26,6 +27,13 @@ describe('validation', function () {
     })
 
     describe('the second argument', function () {
+      beforeEach(function () {
+        sinon.spy(poller.logger, 'warn')
+      })
+
+      afterEach(function () {
+        poller.logger.warn.restore()
+      })
       it('must be an object or undefined', function () {
         var allowed = [{}, void 0]
         _.each(allowed, function (arg) {
@@ -41,6 +49,19 @@ describe('validation', function () {
           }
           expect(error && error.code).to.eql(POLLER_ERROR)
         })
+      })
+
+      it('should warn about the new api', function () {
+        var error
+        try {
+          poller([], function () {})
+        } catch (err) {
+          error = err
+        }
+        expect(error && error.code).to.eql(POLLER_ERROR)
+        expect(poller.logger.warn.calledWith(sinon.match(function (warning) {
+          return warning.indexOf('https://package-browser.qubit.com/packages/@qubit/poller') > -1
+        }))).to.eql(true)
       })
     })
 
