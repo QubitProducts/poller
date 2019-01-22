@@ -117,20 +117,22 @@ function poller (targets, opts) {
       var len = targets.length
       var i = 0
       try {
-        var evaluated = []
         var result
         for (i = 0; i < len; i++) {
-          result = evaluate(targets[i])
-          if (typeof result === 'undefined') {
-            item.remainders = targets.slice(i)
-            return true
+          if (i >= item.evaluated.length) {
+            result = evaluate(targets[i])
+            if (typeof result === 'undefined') {
+              item.remainders = targets.slice(i)
+              return true
+            } else {
+              item.evaluated.push(result)
+              options.logger.info('resolved ' + String(targets[i]))
+            }
           }
-          options.logger.info('resolved ' + String(targets[i]))
-          evaluated.push(result)
         }
         callQueue.push({
           resolve: item.resolve,
-          params: evaluated
+          params: item.evaluated
         })
         return false
       } catch (error) {
@@ -144,8 +146,8 @@ function poller (targets, opts) {
   function resetAfterMaxDuration () {
     clearTimeout(timeout)
     timeout = window.setTimeout(function () {
-      options.logger.info('complete')
       timeoutUnresolvedItems()
+      options.logger.info('complete')
       reset()
     }, options.timeout)
   }
