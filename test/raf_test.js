@@ -9,11 +9,10 @@ var validFrame = require('../lib/valid_frame')
 var validFrames = validFrame.getValidFrames()
 
 describe('request animation frame', function () {
-  this.timeout(5000)
-
-  var reverts, validFrameSpy
+  var reverts, validFrameSpy, clock
 
   beforeEach(function () {
+    clock = sinon.useFakeTimers()
     window.bgark = {}
     validFrameSpy = sinon.spy(validFrame)
     reverts = [poller.__set__('validFrame', validFrameSpy)]
@@ -21,37 +20,32 @@ describe('request animation frame', function () {
 
   afterEach(function () {
     poller.reset()
+    clock.restore()
     while (reverts.length) reverts.pop()()
   })
 
-  it('should only fire on valid frames per second', function (done) {
+  it('should only fire on valid frames per second', function () {
     poller('window.bgark.mcgee')
-      .then(function () {
-        // Should be ~60frames === 1 second at ~60fps
-        expect(validFrameSpy.callCount).to.be.below(65)
-        expect(validFrameSpy.callCount).to.be.above(55)
-        checkAllValidFrameCalls()
-        done()
-      })
-      .catch(done)
     setTimeout(function () {
       window.bgark.mcgee = true
     }, 1000)
+    clock.tick(1000)
+    // Should be ~60frames === 1 second at ~60fps
+    expect(validFrameSpy.callCount).to.be.below(65)
+    expect(validFrameSpy.callCount).to.be.above(55)
+    checkAllValidFrameCalls()
   })
 
-  it('should only last until the backoff threshold', function (done) {
+  it('should only last until the backoff threshold', function () {
     poller('window.bgark.mcgee')
-      .then(function () {
-        // Should be ~180frames === 3 seconds at ~60fps
-        expect(validFrameSpy.callCount).to.be.below(185)
-        expect(validFrameSpy.callCount).to.be.above(175)
-        checkAllValidFrameCalls()
-        done()
-      })
-      .catch(done)
     setTimeout(function () {
       window.bgark.mcgee = true
     }, 4000)
+    clock.tick(4000)
+    // Should be ~180frames === 3 seconds at ~60fps
+    expect(validFrameSpy.callCount).to.be.below(185)
+    expect(validFrameSpy.callCount).to.be.above(175)
+    checkAllValidFrameCalls()
   })
 
   describe('fallbacks', function () {

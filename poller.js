@@ -113,23 +113,36 @@ function poller (targets, opts) {
     }
 
     function filterItems (item) {
-      var targets = item.targets
-      var len = targets.length
-      var i = 0
+      var i, result
+      var cacheIndex = item.evaluated.length
       try {
-        var result
-        for (i = 0; i < len; i++) {
+        for (i = 0; i < item.targets.length; i++) {
           if (i >= item.evaluated.length) {
-            result = evaluate(targets[i])
+            result = evaluate(item.targets[i])
             if (typeof result === 'undefined') {
-              item.remainders = targets.slice(i)
+              item.remainders = item.targets.slice(i)
               return true
             } else {
+              options.logger.info('Poller: resolved ' + String(item.targets[i]))
               item.evaluated.push(result)
-              options.logger.info('Poller: resolved ' + String(targets[i]))
             }
           }
         }
+
+        // Everything has been found, lets re-evaluate cached entries
+        // to make sure they have not gone stale
+        for (i = 0; i < cacheIndex; i++) {
+          result = evaluate(item.targets[i])
+          if (typeof result === 'undefined') {
+            item.remainders = item.targets.slice(i)
+            item.evaluated = item.evaluated.slice(0, i)
+            options.logger.info('Poller: item went stale: ' + String(item.targets[i]))
+            return true
+          } else {
+            item.evaluated[i] = result
+          }
+        }
+
         callQueue.push({
           resolve: item.resolve,
           params: item.evaluated
@@ -198,8 +211,8 @@ function reset () {
   callbacks = []
 }
 
+poller.logger = logger
 poller.isActive = isActive
 poller.reset = reset
-poller.logger = logger
 
 module.exports = poller
