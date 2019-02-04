@@ -1,5 +1,7 @@
+/* globals process */
 var RewirePlugin = require('rewire-webpack')
 var path = require('path')
+var DEBUG = process.env.DEBUG
 
 module.exports = function (config) {
   config.set({
@@ -11,19 +13,22 @@ module.exports = function (config) {
       devtool: 'inline-source-map',
       amd: { jQuery: true },
       module: {
-        loaders: [
-          {
-            test: /\.js$/,
-            loader: 'istanbul-instrumenter-loader',
-            include: [ path.resolve('lib/'), path.resolve('poller.js') ],
-            exclude: /(test|node_modules|bower_components)\//
-          }
-        ]
+        loaders: !DEBUG &&
+          [
+            {
+              test: /\.js$/,
+              loader: 'istanbul-instrumenter-loader',
+              include: [ path.resolve('lib/'), path.resolve('poller.js') ],
+              exclude: /(test|node_modules|bower_components)\//
+            }
+          ]
       },
       plugins: [ new RewirePlugin() ]
     },
     webpackServer: { quiet: true, noInfo: true },
-    reporters: [ 'progress', 'coverage-istanbul', 'coverage' ],
+    reporters: DEBUG
+      ? [ 'progress' ]
+      : [ 'progress', 'coverage-istanbul', 'coverage' ],
     coverageIstanbulReporter: {
       reports: [ 'text-summary' ],
       fixWebpackSourcePaths: true
