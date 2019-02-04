@@ -1,16 +1,10 @@
-ifndef ROOT
-	ROOT = ../..
-endif
-
-BIN = $(ROOT)/node_modules/.bin
-
 .PHONY: lint test watch
 
-test: lint
-	cd ../.. && make test-edge
+test:
+	npm test
 
 lint:
-	$(BIN)/standard5
+	npm run lint
 
 watch:
-	$(BIN)/karma start
+	npm run watch

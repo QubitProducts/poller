@@ -4,7 +4,9 @@
   "description": "Poll for DOM element(s) or window variable existance",
   "main": "poller",
   "scripts": {
-    "test": "standard && karma start --single-run"
+    "test": "npm run lint && karma start --single-run",
+    "lint": "standard5",
+    "watch": "karma start"
   },
   "keywords": [
     "poll",
@@ -35,7 +37,7 @@
     "rewire": "^4.0.1",
     "rewire-webpack": "^1.0.1",
     "sinon": "^7.2.2",
-    "standard": "^10.0.3",
+    "standard5": "^2.0.1",
     "webpack": "^1.0.0"
   },
   "directories": {
