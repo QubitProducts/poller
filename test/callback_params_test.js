@@ -17,6 +17,17 @@ describe('poller', function () {
     poller.reset()
   })
 
+  it('should support a singleton shorthand', function (done) {
+    var $someEl = $('<div>').addClass('some-el')
+    poller('.some-el').then(function (el) {
+      expect(el).to.eql($someEl[0])
+      done()
+    })
+    setTimeout(function () {
+      $someEl.appendTo($container)
+    }, 0)
+  })
+
   it('should return window variables', function (done) {
     poller(['window.universal_variable.page.type']).then(function (items) {
       expect(items[0]).to.eql('foo')
@@ -27,7 +38,7 @@ describe('poller', function () {
     }, 0)
   })
 
-  it('should return jquery elements', function (done) {
+  it('should return DOM elements', function (done) {
     var $someEl = $('<div>').addClass('some-el')
     poller(['.some-el']).then(function (items) {
       expect(items[0]).to.eql($someEl[0])

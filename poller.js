@@ -100,10 +100,13 @@ function poller (targets, opts) {
     var resolved = []
     items = _.filter(items, filterItems)
 
-    var item
+    var item, evaluated
     while (resolved.length) {
       item = resolved.pop()
-      item.resolve(item.evaluated)
+      evaluated = item.singleton
+        ? item.evaluated[0]
+        : item.evaluated
+      item.resolve(evaluated)
     }
 
     function filterItems (item) {
