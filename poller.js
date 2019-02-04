@@ -20,7 +20,7 @@ var MAX_DURATION = 15000 // How long before we stop polling (ms)
 /**
  * Globals
  */
-var tickCount, currentTickDelay, timeout
+var tickCount, currentTickDelay
 var items = []
 
 /**
@@ -70,7 +70,7 @@ function poller (targets, opts) {
     // don't start ticking unless current ticking is inactive
     if (!active) tick()
 
-    resetAfterMaxDuration()
+    handleItemTimeout(item)
     return deferred.promise
   }
 
@@ -100,14 +100,7 @@ function poller (targets, opts) {
     var resolved = []
     items = _.filter(items, filterItems)
 
-    var item, evaluated
-    while (resolved.length) {
-      item = resolved.pop()
-      evaluated = item.singleton
-        ? item.evaluated[0]
-        : item.evaluated
-      item.resolve(evaluated)
-    }
+    while (resolved.length) resolve(resolved.pop())
 
     function filterItems (item) {
       var i, result
@@ -150,24 +143,15 @@ function poller (targets, opts) {
     }
   }
 
-  function resetAfterMaxDuration () {
-    clearTimeout(timeout)
-    timeout = window.setTimeout(function () {
-      timeoutUnresolvedItems()
-      options.logger.info('Poller: complete')
-      reset()
+  function handleItemTimeout (item) {
+    window.clearTimeout(item.timeout)
+    item.timeout = window.setTimeout(function () {
+      // There must be a remainder as the timeout has not been cleared
+      var remainder = unregister(item)
+      remainder = String(remainder)
+      options.logger.info('Poller: could not resolve ' + remainder)
+      item.reject(new Error('Poller: could not resolve ' + remainder))
     }, options.timeout)
-  }
-
-  function timeoutUnresolvedItems () {
-    if (items.length) {
-      items.forEach(function (item) {
-        // There should always be a remainder if poller times out
-        var remainder = String(unregister(item))
-        options.logger.info('Poller: could not resolve ' + remainder)
-        item.reject(new Error('Poller: could not resolve ' + remainder))
-      })
-    }
   }
 
   function logError (error) {
@@ -192,12 +176,21 @@ function register (item) {
 }
 
 function unregister (item) {
+  window.clearTimeout(item.timeout)
   items = _.filter(items, function (i) {
     return i !== item
   })
   if (item.remainders) {
     return item.remainders[0]
   }
+}
+
+function resolve (item) {
+  unregister(item)
+  var evaluated = item.singleton
+    ? item.evaluated[0]
+    : item.evaluated
+  item.resolve(evaluated)
 }
 
 function reset () {

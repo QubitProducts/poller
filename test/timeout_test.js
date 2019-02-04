@@ -66,4 +66,20 @@ describe('timemout', function () {
     expect(fooCb.called).to.be.eql(false)
     expect(barCb.called).to.be.eql(false)
   })
+
+  it('should respect custom timeout options', function () {
+    var fooCb = sinon.stub()
+    var barCb = sinon.stub()
+    poller('.foo', { timeout: 1000 }).catch(fooCb)
+    poller('.bar', { timeout: 2000 }).catch(barCb)
+
+    expect(fooCb.called).to.be.eql(false)
+    expect(barCb.called).to.be.eql(false)
+    clock.tick(1000 + poller.__get__('INITIAL_TICK'))
+    expect(fooCb.called).to.be.eql(true)
+    expect(barCb.called).to.be.eql(false)
+    clock.tick(1000 + poller.__get__('INITIAL_TICK'))
+    expect(fooCb.called).to.be.eql(true)
+    expect(barCb.called).to.be.eql(true)
+  })
 })
