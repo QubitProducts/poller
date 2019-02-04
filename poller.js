@@ -21,7 +21,7 @@ var MAX_DURATION = 15000 // How long before we stop polling (ms)
  * Globals
  */
 var tickCount, currentTickDelay, timeout
-var callbacks = []
+var items = []
 
 /**
  * Main poller method to register 'targets' to poll for
@@ -94,16 +94,16 @@ function poller (targets, opts) {
   }
 
   /**
-   * Loop through all registered callbacks, polling for selectors or executing filter functions
+   * Loop through all registered items, polling for selectors or executing filter functions
    */
   function tock () {
-    var callQueue = []
-    callbacks = _.filter(callbacks, filterItems)
+    var resolved = []
+    items = _.filter(items, filterItems)
 
-    var callItem
-    while (callQueue.length) {
-      callItem = callQueue.pop()
-      callItem.resolve(callItem.params)
+    var item
+    while (resolved.length) {
+      item = resolved.pop()
+      item.resolve(item.evaluated)
     }
 
     function filterItems (item) {
@@ -137,10 +137,7 @@ function poller (targets, opts) {
           }
         }
 
-        callQueue.push({
-          resolve: item.resolve,
-          params: item.evaluated
-        })
+        resolved.push(item)
         return false
       } catch (error) {
         item.remainders = item.targets.slice(i)
@@ -160,8 +157,8 @@ function poller (targets, opts) {
   }
 
   function timeoutUnresolvedItems () {
-    if (callbacks.length) {
-      callbacks.forEach(function (item) {
+    if (items.length) {
+      items.forEach(function (item) {
         // There should always be a remainder if poller times out
         var remainder = String(unregister(item))
         options.logger.info('Poller: could not resolve ' + remainder)
@@ -183,16 +180,16 @@ function init () {
 }
 
 function isActive () {
-  return !!callbacks.length
+  return !!items.length
 }
 
 function register (item) {
   unregister(item)
-  return callbacks.push(item)
+  return items.push(item)
 }
 
 function unregister (item) {
-  callbacks = _.filter(callbacks, function (i) {
+  items = _.filter(items, function (i) {
     return i !== item
   })
   if (item.remainders) {
@@ -202,7 +199,7 @@ function unregister (item) {
 
 function reset () {
   init()
-  callbacks = []
+  items = []
 }
 
 poller.logger = logger
