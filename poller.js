@@ -2,6 +2,7 @@ var _ = require('slapdash')
 var defer = require('sync-p/defer')
 var requestAnimationFrame = require('./lib/raf')
 var validFrame = require('./lib/valid_frame')
+var createObserver = require('./lib/observer')
 var evaluate = require('./lib/evaluate')
 var validate = require('./lib/validate')
 var create = require('./lib/create')
@@ -21,7 +22,8 @@ var MAX_DURATION = 15000 // How long before we stop polling (ms)
  * Globals
  */
 var tickCount, currentTickDelay
-var items = []
+var queue = []
+var observer = createObserver(tock)
 
 /**
  * Main poller method to register 'targets' to poll for
@@ -38,7 +40,6 @@ var items = []
 
 function poller (targets, opts) {
   var deferred = defer()
-  var active = isActive()
   var options = _.assign({
     logger: logger,
     timeout: MAX_DURATION
@@ -47,7 +48,7 @@ function poller (targets, opts) {
   try {
     validate(targets, opts, options.logger)
 
-    var item = create(targets, deferred.resolve, deferred.reject)
+    var item = create(targets, deferred.resolve, deferred.reject, options)
 
     start()
 
@@ -58,107 +59,88 @@ function poller (targets, opts) {
       catch: deferred.promise.catch
     }
   } catch (error) {
-    logError(error)
+    logError(error, options.logger)
   }
 
   function start () {
     register(item)
-
-    // reset state
-    init()
-
-    // don't start ticking unless current ticking is inactive
-    if (!active) tick()
-
-    handleItemTimeout(item)
     return deferred.promise
   }
 
   function stop () {
     return unregister(item)
   }
+}
 
-  function tick () {
-    tickCount += 1
-    var next = requestAnimationFrame
-    var shouldBackoff = tickCount >= BACKOFF_THRESHOLD
-    if (shouldBackoff) {
-      currentTickDelay = currentTickDelay * INCREASE_RATE
-      next = window.setTimeout
-    }
-    if (shouldBackoff || validFrame(tickCount)) {
-      tock()
-    }
-    if (!isActive()) return
-    return next(tick, currentTickDelay)
+function tick () {
+  observer.start()
+  tickCount += 1
+  var next = requestAnimationFrame
+  var shouldBackoff = tickCount >= BACKOFF_THRESHOLD
+  if (shouldBackoff) {
+    currentTickDelay = currentTickDelay * INCREASE_RATE
+    next = window.setTimeout
   }
+  if (shouldBackoff || validFrame(tickCount)) {
+    tock()
+  }
+  if (!isActive()) return
+  return next(tick, currentTickDelay)
+}
 
-  /**
-   * Loop through all registered items, polling for selectors or executing filter functions
-   */
-  function tock () {
-    var resolved = []
-    items = _.filter(items, filterItems)
+/**
+ * Loop through all registered items, polling for selectors or executing filter functions
+ */
+function tock () {
+  var ready = _.filter(queue, evaluateQueue)
 
-    while (resolved.length) resolve(resolved.pop())
+  while (ready.length) resolve(ready.pop())
 
-    function filterItems (item) {
-      var i, result
-      var cacheIndex = item.evaluated.length
-      try {
-        for (i = 0; i < item.targets.length; i++) {
-          if (i >= item.evaluated.length) {
-            result = evaluate(item.targets[i])
-            if (typeof result === 'undefined') {
-              item.remainders = item.targets.slice(i)
-              return true
-            } else {
-              options.logger.info('Poller: resolved ' + String(item.targets[i]))
-              item.evaluated.push(result)
-            }
-          }
-        }
-
-        // Everything has been found, lets re-evaluate cached entries
-        // to make sure they have not gone stale
-        for (i = 0; i < cacheIndex; i++) {
+  function evaluateQueue (item) {
+    var i, result
+    var cacheIndex = item.evaluated.length
+    try {
+      for (i = 0; i < item.targets.length; i++) {
+        if (i >= item.evaluated.length) {
           result = evaluate(item.targets[i])
           if (typeof result === 'undefined') {
-            item.remainders = item.targets.slice(i)
-            item.evaluated = item.evaluated.slice(0, i)
-            options.logger.info('Poller: item went stale: ' + String(item.targets[i]))
-            return true
+            // Cannot resolve item, exit
+            return
           } else {
-            item.evaluated[i] = result
+            item.logger.info('Poller: resolved ' + String(item.targets[i]))
+            item.evaluated.push(result)
           }
         }
-
-        resolved.push(item)
-        return false
-      } catch (error) {
-        item.remainders = item.targets.slice(i)
-        logError(error)
-        return true
       }
+
+      // Everything has been found, lets re-evaluate cached entries
+      // to make sure they have not gone stale
+      for (i = 0; i < cacheIndex; i++) {
+        result = evaluate(item.targets[i])
+        if (typeof result === 'undefined') {
+          item.evaluated = item.evaluated.slice(0, i)
+          item.logger.info('Poller: item went stale: ' + String(item.targets[i]))
+          // Cannot resolve item, exit
+          return
+        } else {
+          item.evaluated[i] = result
+        }
+      }
+
+      // All targets evaluated, add to resolved list
+      return true
+    } catch (error) {
+      logError(error, item.logger)
+      // Cannot resolve item, exit
     }
   }
+}
 
-  function handleItemTimeout (item) {
-    window.clearTimeout(item.timeout)
-    item.timeout = window.setTimeout(function () {
-      // There must be a remainder as the timeout has not been cleared
-      var remainder = unregister(item)
-      remainder = String(remainder)
-      options.logger.info('Poller: could not resolve ' + remainder)
-      item.reject(new Error('Poller: could not resolve ' + remainder))
-    }, options.timeout)
-  }
-
-  function logError (error) {
-    error.code = 'EPOLLER'
-    options.logger.error(error)
-    if (_.get(window, '__qubit.previewActive')) throw error
-  }
+function handleItemTimeout (item) {
+  window.clearTimeout(item.timeoutId)
+  item.timeoutId = window.setTimeout(function () {
+    resolve(item)
+  }, item.timeout)
 }
 
 function init () {
@@ -166,40 +148,69 @@ function init () {
   currentTickDelay = INITIAL_TICK
 }
 
+function reset () {
+  init()
+  observer.stop()
+  queue = []
+}
+
 function isActive () {
-  return !!items.length
+  return !!queue.length
 }
 
 function register (item) {
-  unregister(item)
-  return items.push(item)
+  var active = isActive()
+
+  init()
+
+  handleItemTimeout(item)
+
+  queue = _.filter(queue, function (i) {
+    return i !== item
+  })
+
+  queue.push(item)
+
+  if (!active) {
+    tick()
+    observer.start()
+  }
 }
 
 function unregister (item) {
-  window.clearTimeout(item.timeout)
-  items = _.filter(items, function (i) {
+  window.clearTimeout(item.timeoutId)
+  queue = _.filter(queue, function (i) {
     return i !== item
   })
-  if (item.remainders) {
-    return item.remainders[0]
+  if (!isActive()) observer.stop()
+  if (item.evaluated.length < item.targets.length) {
+    return item.targets[item.evaluated.length]
   }
 }
 
 function resolve (item) {
-  unregister(item)
-  var evaluated = item.singleton
-    ? item.evaluated[0]
-    : item.evaluated
-  item.resolve(evaluated)
+  var remainder = unregister(item)
+  if (remainder) {
+    remainder = String(remainder)
+    item.logger.info('Poller: could not resolve ' + remainder)
+    item.reject(new Error('Poller: could not resolve ' + remainder))
+  } else {
+    var evaluated = item.isSingleton
+      ? item.evaluated[0]
+      : item.evaluated
+    item.resolve(evaluated)
+  }
 }
 
-function reset () {
-  init()
-  items = []
+function logError (error, logger) {
+  error.code = 'EPOLLER'
+  logger.error(error)
+  if (_.get(window, '__qubit.previewActive')) throw error
 }
 
 poller.logger = logger
 poller.isActive = isActive
 poller.reset = reset
+poller.disableMutationObserver = observer.disable
 
 module.exports = poller
