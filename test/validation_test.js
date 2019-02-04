@@ -41,7 +41,7 @@ describe('validation', function () {
         })
         var disallowed = [function () {}, 1234, null, true]
         _.each(disallowed, function (arg) {
-          let error
+          var error
           try {
             poller([], arg)
           } catch (err) {

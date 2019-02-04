@@ -81,8 +81,7 @@ describe('poller', function () {
       function () { return later },
       '.some-el',
       'window.variable.page.type'
-    ])
-    .then(stub)
+    ]).then(stub)
     later = true
     $('<div>').addClass('some-el').appendTo($container)
     window.variable = {
