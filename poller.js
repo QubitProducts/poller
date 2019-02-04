@@ -49,12 +49,6 @@ function poller (targets, opts) {
 
     var item = create(targets, deferred.resolve, deferred.reject)
 
-    deferred.promise.then(function () {
-      unregister(item)
-    }, function () {
-      unregister(item)
-    })
-
     start()
 
     return {
