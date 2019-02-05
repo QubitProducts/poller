@@ -4,6 +4,9 @@ var expect = require('expect.js')
 var sinon = require('sinon')
 var rewire = require('rewire')
 var poller = rewire('../poller')
+var tock = poller.__get__('tock')
+var TICK = poller.__get__('INITIAL_TICK')
+var TIMEOUT = TICK * 4
 
 describe('timemout', function () {
   var $container
@@ -29,10 +32,11 @@ describe('timemout', function () {
   it('should call the timeout callback when the poller times out', function () {
     var fooCb = sinon.stub()
     var barCb = sinon.stub()
-    poller('.foo').then(fooCb, barCb)
+    poller('.foo', { timeout: TIMEOUT }).then(fooCb, barCb)
 
     expect(poller.isActive()).to.eql(true)
-    clock.tick(poller.__get__('MAX_DURATION') + 1)
+    clock.tick(TIMEOUT)
+    tock()
     expect(poller.isActive()).to.eql(false)
     expect(fooCb.called).to.be.eql(false)
     expect(barCb.called).to.be.eql(true)
@@ -41,13 +45,14 @@ describe('timemout', function () {
   it('should not call the timeout callback when the poller completes', function () {
     var fooCb = sinon.stub()
     var barCb = sinon.stub()
-    poller('.foo').then(fooCb, barCb)
+    poller('.foo', { timeout: TIMEOUT }).then(fooCb, barCb)
 
     // make it exist
     $container.append($foo)
     expect(poller.isActive()).to.eql(true)
 
-    clock.tick(poller.__get__('MAX_DURATION') + 1)
+    clock.tick(TIMEOUT)
+    tock()
     expect(poller.isActive()).to.eql(false)
     expect(fooCb.called).to.be.eql(true)
     expect(barCb.called).to.be.eql(false)
@@ -56,12 +61,13 @@ describe('timemout', function () {
   it('should not call the timeout callback when the poller is cancelled', function () {
     var fooCb = sinon.stub()
     var barCb = sinon.stub()
-    var poll = poller('.foo')
+    var poll = poller('.foo', { timeout: TIMEOUT })
     poll.then(fooCb, barCb)
 
     poll.stop()
 
-    clock.tick(poller.__get__('MAX_DURATION') + 1)
+    clock.tick(TIMEOUT)
+    tock()
     expect(poller.isActive()).to.eql(false)
     expect(fooCb.called).to.be.eql(false)
     expect(barCb.called).to.be.eql(false)
@@ -75,10 +81,12 @@ describe('timemout', function () {
 
     expect(fooCb.called).to.be.eql(false)
     expect(barCb.called).to.be.eql(false)
-    clock.tick(1000 + poller.__get__('INITIAL_TICK'))
+    clock.tick(1000)
+    tock()
     expect(fooCb.called).to.be.eql(true)
     expect(barCb.called).to.be.eql(false)
-    clock.tick(1000 + poller.__get__('INITIAL_TICK'))
+    clock.tick(1000)
+    tock()
     expect(fooCb.called).to.be.eql(true)
     expect(barCb.called).to.be.eql(true)
   })

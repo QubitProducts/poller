@@ -10,30 +10,25 @@ describe('validation', function () {
     poller.reset()
   })
 
-  it('should not poll if an error is thrown', function () {
+  it('should not poll if a validation error is thrown', function () {
     try {
       poller(12345) // This should fail validation
     } catch (err) {}
     return expect(poller.isActive()).to.eql(false)
   })
 
-  describe('while in preview', function () {
+  describe('when stopOnError is true', function () {
     beforeEach(function () {
-      window.__qubit = { previewActive: true }
+      poller.defaults({ stopOnError: true })
+      sinon.spy(poller.logger, 'warn')
     })
 
     afterEach(function () {
-      delete window.__qubit
+      poller.logger.warn.restore()
+      poller.defaults({ stopOnError: false })
     })
 
     describe('the second argument', function () {
-      beforeEach(function () {
-        sinon.spy(poller.logger, 'warn')
-      })
-
-      afterEach(function () {
-        poller.logger.warn.restore()
-      })
       it('must be an object or undefined', function () {
         var allowed = [{}, void 0]
         _.each(allowed, function (arg) {

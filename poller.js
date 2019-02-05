@@ -16,8 +16,11 @@ var logger = require('driftwood')('poller')
 var INITIAL_TICK = Math.round(1000 / 60) // The initial tick interval duration before we start backing off (ms)
 var INCREASE_RATE = 1.5 // The backoff multiplier
 var BACKOFF_THRESHOLD = Math.round((3 * 1000) / (1000 / 60)) // How many ticks before we start backing off
-var MAX_DURATION = 15000 // How long before we stop polling (ms)
-
+var DEFAULTS = {
+  logger: logger,
+  timeout: 15000, // How long before we stop polling (ms)
+  stopOnError: false // Whether to stop and throw an error if the evaulation throws
+}
 /**
  * Globals
  */
@@ -40,10 +43,7 @@ var observer = createObserver(tock)
 
 function poller (targets, opts) {
   var deferred = defer()
-  var options = _.assign({
-    logger: logger,
-    timeout: MAX_DURATION
-  }, opts)
+  var options = _.assign({}, DEFAULTS, opts)
 
   try {
     validate(targets, opts, options.logger)
@@ -59,7 +59,7 @@ function poller (targets, opts) {
       catch: deferred.promise.catch
     }
   } catch (error) {
-    logError(error, options.logger)
+    logError(error, options)
   }
 
   function start () {
@@ -103,12 +103,15 @@ function tock () {
       for (i = 0; i < item.targets.length; i++) {
         if (i >= item.evaluated.length) {
           result = evaluate(item.targets[i])
-          if (typeof result === 'undefined') {
-            // Cannot resolve item, exit
-            return
-          } else {
+          if (typeof result !== 'undefined') {
             item.logger.info('Poller: resolved ' + String(item.targets[i]))
             item.evaluated.push(result)
+          } else if ((new Date() - item.start) >= item.timeout) {
+            // Item has timed out, resolve item
+            return true
+          } else {
+            // Cannot resolve item, exit
+            return
           }
         }
       }
@@ -130,17 +133,10 @@ function tock () {
       // All targets evaluated, add to resolved list
       return true
     } catch (error) {
-      logError(error, item.logger)
+      logError(error, item)
       // Cannot resolve item, exit
     }
   }
-}
-
-function handleItemTimeout (item) {
-  window.clearTimeout(item.timeoutId)
-  item.timeoutId = window.setTimeout(function () {
-    resolve(item)
-  }, item.timeout)
 }
 
 function init () {
@@ -163,7 +159,7 @@ function register (item) {
 
   init()
 
-  handleItemTimeout(item)
+  item.start = new Date()
 
   queue = _.filter(queue, function (i) {
     return i !== item
@@ -178,14 +174,11 @@ function register (item) {
 }
 
 function unregister (item) {
-  window.clearTimeout(item.timeoutId)
   queue = _.filter(queue, function (i) {
     return i !== item
   })
   if (!isActive()) observer.stop()
-  if (item.evaluated.length < item.targets.length) {
-    return item.targets[item.evaluated.length]
-  }
+  return item.targets[item.evaluated.length]
 }
 
 function resolve (item) {
@@ -202,15 +195,19 @@ function resolve (item) {
   }
 }
 
-function logError (error, logger) {
+function logError (error, options) {
   error.code = 'EPOLLER'
-  logger.error(error)
-  if (_.get(window, '__qubit.previewActive')) throw error
+  options.logger.error(error)
+  if (options.stopOnError) throw error
 }
 
-poller.logger = logger
 poller.isActive = isActive
 poller.reset = reset
+
+poller.logger = logger
 poller.disableMutationObserver = observer.disable
+poller.defaults = function (newDefaults) {
+  _.assign(DEFAULTS, newDefaults)
+}
 
 module.exports = poller

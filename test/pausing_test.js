@@ -4,6 +4,9 @@ var rewire = require('rewire')
 var expect = require('expect.js')
 var sinon = require('sinon')
 var poller = rewire('../poller')
+var tock = poller.__get__('tock')
+var TICK = poller.__get__('INITIAL_TICK')
+var TIMEOUT = TICK * 4
 
 describe('pausing', function () {
   var clock
@@ -26,22 +29,23 @@ describe('pausing', function () {
 
   it('should poll after having been paused', function () {
     var cb = sinon.stub()
-
-    poller('.foo').then(cb)
-    clock.tick(poller.__get__('INITIAL_TICK'))
+    poller('.foo', { timeout: TIMEOUT }).then(cb)
+    clock.tick(TICK)
     expect(poller.isActive()).to.be.eql(true)
-    clock.tick(poller.__get__('INITIAL_TICK'))
+    clock.tick(TICK)
     expect(poller.isActive()).to.be.eql(true)
-    clock.tick(poller.__get__('MAX_DURATION'))
+    clock.tick(TIMEOUT - TICK - TICK)
+    tock()
     expect(cb.called).to.be.eql(false)
     expect(poller.isActive()).to.be.eql(false)
 
     // restart polling
-    poller('.bar').then(cb)
+    poller('.bar', { timeout: TIMEOUT }).then(cb)
     expect(poller.isActive()).to.be.eql(true)
-    clock.tick(poller.__get__('INITIAL_TICK'))
+    clock.tick(TICK)
     expect(poller.isActive()).to.be.eql(true)
-    clock.tick(poller.__get__('MAX_DURATION') + poller.__get__('INITIAL_TICK'))
+    clock.tick(TIMEOUT - TICK)
+    tock()
     expect(cb.called).to.be.eql(false)
     expect(poller.isActive()).to.be.eql(false)
   })
