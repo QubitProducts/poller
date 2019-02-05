@@ -177,7 +177,9 @@ function unregister (item) {
   queue = _.filter(queue, function (i) {
     return i !== item
   })
-  if (!isActive()) observer.stop()
+  if (!isActive()) {
+    observer.stop()
+  }
   return item.targets[item.evaluated.length]
 }
 
@@ -193,6 +195,7 @@ function resolve (item) {
       : item.evaluated
     item.resolve(evaluated)
   }
+  item.logger('Poller: complete')
 }
 
 function logError (error, options) {
