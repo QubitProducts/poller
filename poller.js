@@ -73,7 +73,6 @@ function poller (targets, opts) {
 }
 
 function tick () {
-  observer.start()
   tickCount += 1
   var next = requestAnimationFrame
   var shouldBackoff = tickCount >= BACKOFF_THRESHOLD
@@ -170,6 +169,7 @@ function register (item) {
   if (!active) {
     tick()
     observer.start()
+    item.logger.info('Poller: started')
   }
 }
 
@@ -179,6 +179,7 @@ function unregister (item) {
   })
   if (!isActive()) {
     observer.stop()
+    item.logger.info('Poller: complete')
   }
   return item.targets[item.evaluated.length]
 }
@@ -195,7 +196,6 @@ function resolve (item) {
       : item.evaluated
     item.resolve(evaluated)
   }
-  item.logger('Poller: complete')
 }
 
 function logError (error, options) {

@@ -41,35 +41,34 @@ var poll = poller([
   'window.foo.bar',
   () => 123
 ], {
-  // Custom logger
-  logger: logger
+  // Options
+  logger: logger // Pass in a custom logger
+  stopOnError: true // Prevents error suppression during evaluation
+  timeout: 1000 // Number of milliseconds after which the poller will expire unresolved items
 })
 
-// Start polling
 poll
   // returns a promise for the items being polled for
   .then(function ([nav, bar, id]) {
     console.log(nav, bar, id)
   })
 
+```
+
+The default timeout is 15 seconds - if all conditions are not all met within this time, polling will stop
+
+However you can stop and restart polling at any time by calling `stop` and `start`:
+```js
+const poll = poller('body, > .nav')
+
 // Stop polling
 poll.stop()
 
-// Start polling again
+// Restart polling
 poll.start()
 ```
 
-The max polling time is 15 seconds - if all conditions are not all met within this time, polling will stop
-
-However you can stop polling earlier by calling stop on your polling instance:
-```js
-const poll = poller('body, > .nav')
-setTimeout(poll.stop, 5000)
-```
-
-When the poller times out the promise is rejected
-
-You can handle this case like so:
+When the poller times out the promise is rejected:
 ```js
 poller(() => false)
   .then(cb)
@@ -77,4 +76,6 @@ poller(() => false)
     console.log(err)
     // => Poller timed out: could not resolve function () { return false }
   })
+
 ```
+Note: This library uses the [sync-p](https://github.com/QubitProducts/sync-p) promise library which will resolve synchronously if your items are already resolvable
