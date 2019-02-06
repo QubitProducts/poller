@@ -167,9 +167,9 @@ function register (item) {
   queue.push(item)
 
   if (!active) {
+    item.logger.info('Poller: started')
     tick()
     observer.start()
-    item.logger.info('Poller: started')
   }
 }
 
@@ -179,7 +179,6 @@ function unregister (item) {
   })
   if (!isActive()) {
     observer.stop()
-    item.logger.info('Poller: complete')
   }
   return item.targets[item.evaluated.length]
 }
@@ -195,6 +194,10 @@ function resolve (item) {
       ? item.evaluated[0]
       : item.evaluated
     item.resolve(evaluated)
+  }
+
+  if (!isActive()) {
+    item.logger.info('Poller: complete')
   }
 }
 
