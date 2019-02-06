@@ -1,76 +1,81 @@
 @qubit/poller
 =============
 
-Poller allows you to test for certain elements to be on site or certain conditions to be true before proceeding with a callback function.
+Poller allows you to wait for:
+  - the presence of DOM elements
+  - window variables to be defined
+  - arbitrary conditions to be met
 
-### Usage
+and returns a promise for those elements, variables or the results of your custom poll functions
+
+### Simple usage
 
 ```js
 var poller = require('@qubit/poller')
 
-// Poll for DOM elements using `jquery` by passing in a selector
-poller(['body > .nav'], cb)
+// Wait for the presence of DOM elements by passing in a selector:
+poller('body > .nav').then(function (nav) {
+  console.log(nav)
+})
 
+// Wait for window variables to be defined:
+poller('window.foo.bar').then(function (bar) {
+  console.log(bar)
+})
 
-// Pass in custom functions to be tested. Any truthy value returned will be considered a passing condition.
-poller([function() { return true }], cb)
+// Wait for arbitrary conditions to become truthy by passing in a custom function:
+poller(() => true).then(cb)
 
-
-// Shorthand for testing window variables are not undefined
-poller(['window.foo.bar'], cb)
-
-// which is equivalent to
-poller([() => { return window.foo && typeof window.foo.bar !== 'undefined' }], cb)
-
-
-// Or mix and match
-poller(['body > .nav', 'window.foo', () => true], cb)
-
+// Mix and match:
+poller(['body > .nav', 'window.foo', () => 1234]).then(function ([nav, foo, id]) {
+  console.log(nav, foo, id)
+})
 ```
 
-The resulting targets will be passed back into the `cb` function in the same order:
+### Advanced usage
 
 ```js
+// Create a poller instance with several targets
+var poll = poller([
+  'body > .nav',
+  'window.foo.bar',
+  () => 123
+], {
+  // Options
+  logger: logger // Pass in a custom logger
+  stopOnError: true // Prevents error suppression during evaluation
+  timeout: 1000 // Number of milliseconds after which the poller will expire unresolved items
+})
 
-poller(
-  [ 'body > .nav', 'window.page.type', () => window.foo ],
-  function cb ($nav, pageType, foo) {
-    console.log($nav)
-    // => jQuery instance of `.nav` DOM element
-    
-    console.log(pageType)
-    // => 'home'
-    
-    console.log(foo)
-    // => 'bar'
-  }
-)
+poll
+  // returns a promise for the items being polled for
+  .then(function ([nav, bar, id]) {
+    console.log(nav, bar, id)
+  })
 
-window.page = { type: 'home' }
-window.foo = 'bar'
 ```
 
-You can cancel a poller by calling the function that is returned:
+The default timeout is 15 seconds - if all conditions are not all met within this time, polling will stop
+
+However you can stop and restart polling at any time by calling `stop` and `start`:
 ```js
-const cancel = poller(['body, > .nav'], cb)
+const poll = poller('body, > .nav')
 
-// Cancel if not resolved within 5 seconds
-setTimeout(() => cancel(), 5000)
+// Stop polling
+poll.stop()
+
+// Restart polling
+poll.start()
 ```
 
-The max polling time is 15 seconds, meaning if the conditions are not all met after this time, polling will automatially be cancelled.
-
-In the event that you want a function to run when the poller expires, you can pass a timeout handler:
+When the poller times out the promise is rejected:
 ```js
-poller(
-  ['window.foo', function () { return false }, 'body'], // targets (note second parameter will never pass returning false)
-  cb, // Would be 'done' function
-  function (remainders) { console.log('poller timed out: ', remainders) } // onTimeout handler which logs params
-)
+poller(() => false)
+  .then(cb)
+  .catch(function (err) {
+    console.log(err)
+    // => Poller timed out: could not resolve function () { return false }
+  })
 
-window.foo = 'bar'
-// => poller timed out: [f, 'body']
 ```
-
-### Performance
-Since the main usage of this library is to ensure certain DOM elements are present on page, performance is optimised by using `MutationObserver` if available. Failing this, poller will use `setTimeout` with a backoff multiplier of 1.5 after 3 seconds
+Note: This library uses the [sync-p](https://github.com/QubitProducts/sync-p) promise library which will resolve synchronously if your items are already resolvable

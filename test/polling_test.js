@@ -1,111 +1,143 @@
-/* globals define describe beforeEach afterEach it */
-define(function (require) {
-  var $ = require('@qubit/jquery')
-  var poller = require('../poller')
+/* globals describe beforeEach afterEach it */
+var $ = require('@qubit/jquery')
+var sinon = require('sinon')
+var expect = require('expect.js')
+var rewire = require('rewire')
+var poller = rewire('../poller')
 
-  describe('poller', function () {
-    var $container
+describe('poller', function () {
+  var $container, clock, reverts, stub
 
-    beforeEach(function () {
-      $container = $('<div class="container"/>').appendTo('body')
-    })
-
-    afterEach(function () {
-      window.universal_variable = false
-      $container.remove()
-      poller.reset()
-    })
-
-    it('should poll for window variables', function (done) {
-      poller(['window.universal_variable.page.type'], function () { done() })
-      setTimeout(function () {
-        window.universal_variable = { page: { type: 'foo' } }
-      }, 0)
-    })
-
-    it('should poll for selectors', function (done) {
-      poller('.some-el', function () { done() })
-      setTimeout(function () {
-        $('<div>').addClass('some-el').appendTo($container)
-      }, 0)
-    })
-
-    it('should poll for selector arrays', function (done) {
-      poller(['.some-el'], function () { done() })
-      setTimeout(function () {
-        $('<div>').addClass('some-el').appendTo($container)
-      }, 0)
-    })
-
-    it('should poll for selector arrays with multiple items', function (done) {
-      poller(['.some-el', '.other-el'], function () { done() })
-      setTimeout(function () {
-        $container.append('<div class="some-el"></div><div class="other-el"></div>')
-      }, 0)
-    })
-
-    it('should poll for a mixture of targets', function (done) {
-      var later = false
-      $('.some-el').remove()
-      poller(['.some-el', 'window.universal_variable.page.type', function () { return later }], function () { done() })
-      setTimeout(function () {
-        later = true
-        $('<div>').addClass('some-el').appendTo($container)
-        window.universal_variable = {
-          page: {
-            type: 'foo'
-          }
-        }
-      }, 0)
-    })
-
-    it('should retry when errors are thrown in filter function', function (done) {
-      poller(function () { return window.universal_variable.page.type === 'foo' }, function () { done() })
-      setTimeout(function () {
-        window.universal_variable = {
-          page: {
-            type: 'foo'
-          }
-        }
-      }, 0)
-    })
-
-    it('should be able to handle callback functions that call poller', function (done) {
-      function secondFunc () {
-        done()
-      }
-
-      function firstFunc () {
-        poller([
-          function () {
-            return true
-          }
-        ], secondFunc)
-      }
-
-      poller([
-        function () {
-          return true
-        }
-      ], firstFunc)
-    })
+  beforeEach(function () {
+    stub = sinon.stub()
+    $container = $('<div class="container"/>').appendTo('body')
+    clock = sinon.useFakeTimers()
+    reverts = [poller.__set__('requestAnimationFrame', window.setTimeout)]
   })
 
-  it('should not run the callback if only the first argument passes', function (done) {
-    var cbFired = false
-    window.universal_variable = {
+  afterEach(function () {
+    delete window.variable
+    $container.remove()
+    poller.reset()
+    clock.restore()
+    while (reverts.length) reverts.pop()()
+  })
+
+  it('should poll for window variables', function () {
+    poller(['window.variable.page.type']).then(stub)
+    window.variable = { page: { type: 'foo' } }
+    expect(stub.called).to.eql(false)
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    expect(stub.called).to.eql(true)
+  })
+
+  it('should poll for selectors', function () {
+    poller('.some-el').then(stub)
+    $('<div>').addClass('some-el').appendTo($container)
+    expect(stub.called).to.eql(false)
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    expect(stub.called).to.eql(true)
+  })
+
+  it('should poll for selector arrays', function () {
+    poller(['.some-el']).then(stub)
+    $('<div>').addClass('some-el').appendTo($container)
+    expect(stub.called).to.eql(false)
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    expect(stub.called).to.eql(true)
+  })
+
+  it('should poll for selector arrays with multiple items', function () {
+    poller(['.some-el', '.other-el']).then(stub)
+    $container.append('<div class="some-el"></div><div class="other-el"></div>')
+    expect(stub.called).to.eql(false)
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    expect(stub.called).to.eql(true)
+  })
+
+  it('should not resolve if items have gone stale', function () {
+    poller(['.el-1', '.el-2', '.el-3']).then(stub)
+    var $el1 = $('<div class="el-1"></div>')
+    var $el2 = $('<div class="el-2"></div>')
+    var $el3 = $('<div class="el-3"></div>')
+    $container.append($el1)
+    $container.append($el2)
+    expect(stub.called).to.eql(false)
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    $el2.remove()
+    $container.append($el3)
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    expect(stub.called).to.eql(false)
+    $container.append($el2)
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    expect(stub.called).to.eql(true)
+  })
+
+  it('should poll for a mixture of targets', function () {
+    var later = false
+    $('.some-el').remove()
+    poller([
+      function () { return later },
+      '.some-el',
+      'window.variable.page.type'
+    ]).then(stub)
+    later = true
+    $('<div>').addClass('some-el').appendTo($container)
+    window.variable = {
       page: {
         type: 'foo'
       }
     }
-    poller(['window.universal_variable.page.type', 'window.somethingelse'], function () {
-      cbFired = true
-    })
-    setTimeout(function () {
-      if (cbFired) {
-        done(new Error('should not have fired'))
-      }
-      done()
-    }, 0)
+    expect(stub.called).to.eql(false)
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    expect(stub.called).to.eql(true)
   })
+
+  it('should retry when errors are thrown in filter function', function () {
+    poller(function () { return window.variable.page.type === 'foo' }).then(stub)
+    window.variable = { page: { type: 'foo' } }
+    expect(stub.called).to.eql(false)
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    expect(stub.called).to.eql(true)
+  })
+
+  it('should retry when errors are thrown in filter function', function () {
+    poller(function () { return window.variable.page.type === 'foo' }).then(stub)
+    window.variable = {
+      page: {
+        type: 'foo'
+      }
+    }
+    expect(stub.called).to.eql(false)
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    expect(stub.called).to.eql(true)
+  })
+
+  it('should be able to handle callback functions that call poller', function (done) {
+    function secondFunc () {
+      done()
+    }
+
+    function firstFunc () {
+      poller([ truethy ]).then(secondFunc)
+    }
+
+    poller([ truethy ]).then(firstFunc)
+  })
+
+  it('should not run the callback if only the first argument passes', function () {
+    window.variable = {
+      page: {
+        type: 'foo'
+      }
+    }
+    poller(['window.variable.page.type', 'window.somethingelse']).then(stub)
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    expect(stub.called).to.eql(false)
+  })
+
+  function truethy () {
+    return true
+  }
 })

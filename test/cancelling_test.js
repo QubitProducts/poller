@@ -1,65 +1,67 @@
-/* globals define describe beforeEach afterEach it expect sinon */
-define(function (require) {
-  var $ = require('@qubit/jquery')
-  var rewire = require('rewire')
-  var poller = rewire('../poller')
+/* globals describe beforeEach afterEach it */
+var $ = require('@qubit/jquery')
+var rewire = require('rewire')
+var sinon = require('sinon')
+var expect = require('expect.js')
+var poller = rewire('../poller')
 
-  describe('cancelling', function () {
-    var $container
-    var clock
-    var $foo
-    var $bar
-    var reverts
+describe('cancelling', function () {
+  var $container
+  var clock
+  var $foo
+  var $bar
+  var reverts
 
-    beforeEach(function () {
-      $container = $('<div class="container"/>').appendTo('body')
-      $foo = $('<div class="foo"/>')
-      $bar = $('<div class="bar"/>')
-      clock = sinon.useFakeTimers()
-      reverts = [poller.__set__('requestAnimationFrame', window.setTimeout)]
-    })
+  beforeEach(function () {
+    $container = $('<div class="container"/>').appendTo('body')
+    $foo = $('<div class="foo"/>')
+    $bar = $('<div class="bar"/>')
+    clock = sinon.useFakeTimers()
+    reverts = [poller.__set__('requestAnimationFrame', window.setTimeout)]
+  })
 
-    afterEach(function () {
-      window.universal_variable = false
-      $container.remove()
-      poller.reset()
-      clock.restore()
-      while (reverts.length) reverts.pop()()
-    })
+  afterEach(function () {
+    window.universal_variable = false
+    $container.remove()
+    poller.reset()
+    clock.restore()
+    while (reverts.length) reverts.pop()()
+  })
 
-    it('should remove the corresponding callback from the polling chain', function () {
-      var fooCb = sinon.stub()
-      var cancelFoo = poller('.foo', fooCb)
-      expect(poller.isActive()).to.eql(true)
+  it('should remove the corresponding callback from the polling chain', function () {
+    var fooCb = sinon.stub()
+    var poll = poller('.foo')
+    poll.then(fooCb)
+    expect(poller.isActive()).to.eql(true)
 
-      cancelFoo()
+    poll.stop()
 
-      // make it exist
-      $container.append($foo)
+    // make it exist
+    $container.append($foo)
 
-      clock.tick(poller.__get__('INITIAL_TICK'))
-      expect(poller.isActive()).to.be.eql(false)
-      expect(fooCb.called).to.be.eql(false)
-    })
+    clock.tick(poller.__get__('INITIAL_TICK'))
+    expect(poller.isActive()).to.eql(false)
+    expect(fooCb.called).to.eql(false)
+  })
 
-    it('should continue polling for other callback items after cancelling another', function () {
-      var fooCb = sinon.stub()
-      var barCb = sinon.stub()
-      var cancelFoo = poller('.foo', fooCb)
-      poller('.bar', barCb)
+  it('should continue polling for other callback items after cancelling another', function () {
+    var fooCb = sinon.stub()
+    var barCb = sinon.stub()
+    var poll = poller('.foo')
+    poll.then(fooCb)
+    poller('.bar').then(barCb)
 
-      cancelFoo()
-      clock.tick(poller.__get__('INITIAL_TICK') * 2)
-      expect(poller.isActive()).to.be.eql(true)
-      expect(fooCb.called).to.be.eql(false)
-      expect(barCb.called).to.be.eql(false)
+    poll.stop()
+    clock.tick(poller.__get__('INITIAL_TICK') * 2)
+    expect(poller.isActive()).to.eql(true)
+    expect(fooCb.called).to.eql(false)
+    expect(barCb.called).to.eql(false)
 
-      // make foo and bar elements exist
-      $container.append($bar, $foo)
-      clock.tick(poller.__get__('INITIAL_TICK') * 2)
-      expect(poller.isActive()).to.be.eql(false)
-      expect(fooCb.called).to.be.eql(false)
-      expect(barCb.called).to.be.eql(true)
-    })
+    // make foo and bar elements exist
+    $container.append($bar, $foo)
+    clock.tick(poller.__get__('INITIAL_TICK') * 2)
+    expect(poller.isActive()).to.eql(false)
+    expect(fooCb.called).to.eql(false)
+    expect(barCb.called).to.eql(true)
   })
 })
