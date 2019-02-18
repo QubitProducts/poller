@@ -2,7 +2,6 @@
 var _ = require('slapdash')
 var poller = require('../poller')
 var POLLER_ERROR = 'EPOLLER'
-var sinon = require('sinon')
 var expect = require('expect.js')
 
 describe('validation', function () {
@@ -20,11 +19,9 @@ describe('validation', function () {
   describe('when stopOnError is true', function () {
     beforeEach(function () {
       poller.defaults({ stopOnError: true })
-      sinon.spy(poller.logger, 'warn')
     })
 
     afterEach(function () {
-      poller.logger.warn.restore()
       poller.defaults({ stopOnError: false })
     })
 
@@ -54,9 +51,7 @@ describe('validation', function () {
           error = err
         }
         expect(error && error.code).to.eql(POLLER_ERROR)
-        expect(poller.logger.warn.calledWith(sinon.match(function (warning) {
-          return warning.indexOf('https://package-browser.qubit.com/packages/@qubit/poller') > -1
-        }))).to.eql(true)
+        expect(error.message.indexOf('https://docs.qubit.com/content/developers/experiences-poller') > -1).to.eql(true)
       })
     })
 
