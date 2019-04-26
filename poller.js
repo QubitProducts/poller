@@ -42,21 +42,20 @@ var observer = createObserver(tock)
  */
 
 function poller (targets, opts) {
-  var deferred = defer()
-  var options = _.assign({}, DEFAULTS, opts)
+  var options = _.assign({}, DEFAULTS, opts, defer())
 
   try {
     validate(targets, opts, options.logger)
 
-    var item = create(targets, deferred.resolve, deferred.reject, options)
+    var item = create(targets, options)
 
     start()
 
     return {
       start: start,
       stop: stop,
-      then: deferred.promise.then,
-      catch: deferred.promise.catch
+      then: options.promise.then,
+      catch: options.promise.catch
     }
   } catch (error) {
     logError(error, options)
@@ -64,7 +63,7 @@ function poller (targets, opts) {
 
   function start () {
     register(item)
-    return deferred.promise
+    return options.promise
   }
 
   function stop () {
@@ -186,9 +185,10 @@ function unregister (item) {
 function resolve (item) {
   var remainder = unregister(item)
   if (remainder) {
-    remainder = String(remainder)
-    item.logger.info('Poller: could not resolve ' + remainder)
-    item.reject(new Error('Poller: could not resolve ' + remainder))
+    var error = new Error('Poller: could not resolve ' + String(remainder))
+    error.code = 'EPOLLER:TIMEOUT'
+    item.logger.info(error.message)
+    item.reject(error)
   } else {
     var evaluated = item.isSingleton
       ? item.evaluated[0]
