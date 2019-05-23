@@ -45,7 +45,7 @@ function poller (targets, opts) {
   var options = _.assign({}, DEFAULTS, opts, defer())
 
   try {
-    validate(targets, opts, options.logger)
+    validate(targets, opts)
 
     var item = create(targets, options)
 
@@ -203,7 +203,7 @@ function resolve (item) {
 
 function logError (error, options) {
   error.code = 'EPOLLER'
-  options.logger.error(error)
+  if (options.logger) options.logger.error(error)
   if (options.stopOnError) throw error
 }
 
