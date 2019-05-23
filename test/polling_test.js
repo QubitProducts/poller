@@ -24,7 +24,7 @@ describe('poller', function () {
   })
 
   it('should poll for window variables', function () {
-    poller(['window.variable.page.type']).then(stub)
+    poller(['window.variable.page.type'], { logger: false }).then(stub)
     window.variable = { page: { type: 'foo' } }
     expect(stub.called).to.eql(false)
     clock.tick(poller.__get__('INITIAL_TICK'))

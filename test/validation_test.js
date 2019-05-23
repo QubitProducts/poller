@@ -11,7 +11,7 @@ describe('validation', function () {
 
   it('should not poll if a validation error is thrown', function () {
     try {
-      poller(12345) // This should fail validation
+      poller(12345, { logger: false }) // This should fail validation
     } catch (err) {}
     return expect(poller.isActive()).to.eql(false)
   })
