@@ -100,7 +100,7 @@ function tock () {
     try {
       for (i = 0; i < item.targets.length; i++) {
         if (i >= item.evaluated.length) {
-          result = evaluate(item.targets[i])
+          result = evaluate(item.targets[i], item.queryAll)
           if (typeof result !== 'undefined') {
             item.logger.info('Poller: resolved ' + String(item.targets[i]))
             item.evaluated.push(result)
@@ -117,7 +117,7 @@ function tock () {
       // Everything has been found, lets re-evaluate cached entries
       // to make sure they have not gone stale
       for (i = 0; i < cacheIndex; i++) {
-        result = evaluate(item.targets[i])
+        result = evaluate(item.targets[i], item.queryAll)
         if (typeof result === 'undefined') {
           item.evaluated = item.evaluated.slice(0, i)
           item.logger.info('Poller: item went stale: ' + String(item.targets[i]))
