@@ -17,10 +17,21 @@ describe('poller', function () {
     poller.reset()
   })
 
-  it('should support a singleton shorthand', function (done) {
+  it('should support a singleton shorthand for single query', function (done) {
     var $someEl = $('<div>').addClass('some-el')
     poller('.some-el').then(function (el) {
       expect(el).to.eql($someEl[0])
+      done()
+    })
+    setTimeout(function () {
+      $someEl.appendTo($container)
+    }, 0)
+  })
+
+  it('should support a singleton shorthand for all query', function (done) {
+    var $someEl = $('<div>').addClass('some-el')
+    poller('.some-el', { queryAll: true }).then(function (el) {
+      expect(el[0]).to.eql($someEl[0])
       done()
     })
     setTimeout(function () {
@@ -38,10 +49,21 @@ describe('poller', function () {
     }, 0)
   })
 
-  it('should return DOM elements', function (done) {
+  it('should return DOM elements for single query', function (done) {
     var $someEl = $('<div>').addClass('some-el')
     poller(['.some-el']).then(function (items) {
       expect(items[0]).to.eql($someEl[0])
+      done()
+    })
+    setTimeout(function () {
+      $someEl.appendTo($container)
+    }, 0)
+  })
+
+  it('should return DOM elements for all query', function (done) {
+    var $someEl = $('<div>').addClass('some-el')
+    poller(['.some-el'], { queryAll: true }).then(function (items) {
+      expect(items[0][0]).to.eql($someEl[0])
       done()
     })
     setTimeout(function () {
