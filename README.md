@@ -45,6 +45,7 @@ var poll = poller([
   logger: logger // Pass in a custom logger
   stopOnError: true // Prevents error suppression during evaluation
   timeout: 1000 // Number of milliseconds after which the poller will expire unresolved items
+  queryAll: true // Use querySelectorAll to retrive a node list matching the selector
 })
 
 poll
