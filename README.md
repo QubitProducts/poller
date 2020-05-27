@@ -8,6 +8,19 @@ Poller allows you to wait for:
 
 and returns a promise for those elements, variables or the results of your custom poll functions
 
+### Design considerations
+
+We have careful designed this module to be highly performant during the most critical stages of page loading. Here are some of the considerations we have made:
+
+- We use the `document.querySelector` method to check if an element is on the page
+  - We do not use `document.querySelectorAll` as this would require walking the entire DOM tree, whereas `querySelector` bails at the first match
+  - Some of our competitors rely on the jQuery 'Sizzle' selector engine, which is much larger in size and slower
+- When an element is not found, we apply an exponential backoff to minimise impact on page performance
+  - We choose to poll a little more often at first to reduce page flicker, but then rapidly back off
+- We use the `requestAnimationFrame` JavaScript function instead of `setTimeout` to ensure we do not cause janky rendering
+- When polling for multiple things, successful matches are temporarily cached to avoid unnecessary repeated polling, and then re-evaluated one final time once everything is ready to ensure they still exist
+
+
 ### Simple usage
 
 ```js
